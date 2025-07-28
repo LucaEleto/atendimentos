@@ -97,10 +97,10 @@ def cadastrar_cliente_completo(cnpj, razao_social, nome_fantasia, endereco, muni
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO clientes 
-        (cnpj, razao_social, nome_fantasia, endereco, municipio, uf, nome) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        (cnpj, razao_social, nome_fantasia, endereco, municipio, uf) 
+        VALUES (%s, %s, %s, %s, %s, %s)
     """, (
-        cnpj, razao_social, nome_fantasia, endereco, municipio, uf, nome_fantasia or razao_social
+        cnpj, razao_social, nome_fantasia, endereco, municipio, uf
     ))
     conn.commit()
     conn.close()
