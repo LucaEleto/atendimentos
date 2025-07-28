@@ -131,6 +131,14 @@ def cadastrar_cliente():
     endereco = st.text_input("Endereço", value=endereco)
     municipio = st.text_input("Município", value=municipio)
     uf = st.text_input("UF", value=uf)
+    email_cliente = st.text_input("Email do Cliente")
+    contato_cliente = st.text_input("Contato do Cliente")
+    nome_contabilidade = st.text_input("Nome da Contabilidade")
+    email_contabilidade = st.text_input("Email da Contabilidade")
+    contato_contabilidade = st.text_input("Contato da Contabilidade")
+    observacao = st.text_area("Observações")
+
+
 
     if st.button("Salvar Cliente"):
         if not cnpj or not razao:
@@ -138,7 +146,7 @@ def cadastrar_cliente():
         elif db.cnpj_existe(cnpj):
             st.error("Este CNPJ já está cadastrado.")
         else:
-            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf)
+            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao)
             st.success("Cliente cadastrado com sucesso!")
             st.rerun()
 
