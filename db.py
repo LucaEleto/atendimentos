@@ -91,3 +91,10 @@ def listar_cliente(parte_nome):
     clientes = cursor.fetchall()
     cursor.close()
     return clientes
+
+def cadastrar_cliente(nome):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO clientes (cliente, fantasia, cnpj ) VALUES (%s, %s, %s)", (cliente, fantasia, cnpj,))
+    conn.commit()
+    conn.close()
