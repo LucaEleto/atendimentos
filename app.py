@@ -1,7 +1,7 @@
 import streamlit as st
 import db
 import auth
-import datetime
+import requests
 
 st.set_page_config(page_title='Sistema De Atendimento', layout='wide')
 
@@ -94,19 +94,51 @@ def paniel_admin():
     atendimentos = db.listar_atendimentos()
     st.dataframe(atendimentos)
 
+def buscar_dados_cnpj(cnpj):
+    try:
+        resposta = requests.get(f"https://www.receitaws.com.br/v1/cnpj/{cnpj}")
+        if resposta.status_code == 200:
+            dados = resposta.json()
+            if dados.get("status") == "OK":
+                return dados
+    except Exception as e:
+        st.error("Erro ao buscar CNPJ: " + str(e))
+    return None
+    
 def cadastrar_cliente():
     st.title("Cadastrar Novo Cliente")
 
-    cliente = st.text_input("Razão Social")
-    fantasia = st.text_input("Nome Fantasia")
-    cnpj = st.text_input("CNPJ")
+    cnpj = st.text_input("CNPJ (somente números)", max_chars=14)
 
-    if st.button("Salvar"):
-        if nome.strip() == "":
-            st.warning("Digite um nome válido.")
+    if len(cnpj) == 14:
+        dados = buscar_dados_cnpj(cnpj)
+        if dados:
+            razao = dados.get("nome", "")
+            fantasia = dados.get("fantasia", "")
+            endereco = f"{dados.get('logradouro', '')}, {dados.get('numero', '')} - {dados.get('bairro', '')}"
+            municipio = dados.get("municipio", "")
+            uf = dados.get("uf", "")
+            st.success("Dados carregados com sucesso!")
         else:
-            db.cadastrar_cliente(nome.strip())
+            st.warning("CNPJ não encontrado ou excedeu o limite de requisições.")
+            razao = fantasia = endereco = municipio = uf = ""
+    else:
+        razao = fantasia = endereco = municipio = uf = ""
+
+    # Permitir editar os campos
+    razao = st.text_input("Razão Social", value=razao)
+    fantasia = st.text_input("Nome Fantasia", value=fantasia)
+    endereco = st.text_input("Endereço", value=endereco)
+    municipio = st.text_input("Município", value=municipio)
+    uf = st.text_input("UF", value=uf)
+
+    if st.button("Salvar Cliente"):
+        if not cnpj or not razao:
+            st.error("CNPJ e Razão Social são obrigatórios.")
+        else:
+            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf)
             st.success("Cliente cadastrado com sucesso!")
+            st.rerun()
 
 def gerenciar_usuarios():
     st.title("Gerenciar Usuários")
