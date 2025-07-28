@@ -1,5 +1,4 @@
 import mysql.connector
-from datetime import datetime
 
 def conectar():
     return mysql.connector.connect(
@@ -27,11 +26,10 @@ def buscar_usuario_por_email(email):
 
 
 def salvar_atendimento(usuario_id, cliente, descricao, status):
-    agora = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status, data) VALUES (%s, %s, %s, %s, %s)",
-                    (usuario_id, cliente, descricao, status, agora))
+    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
+                    (usuario_id, cliente, descricao, status))
     conn.commit()
     cursor.close()
 
