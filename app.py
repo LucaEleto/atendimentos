@@ -148,6 +148,8 @@ def tela_principal():
         meus_atendimentos()
     elif escolha == 'Painel de Administração':
         paniel_admin()
+    elif escolha == 'Cadastar Cliente'
+        cadastar_cliente()
     elif escolha == 'Gerenciar Usuários':
         gerenciar_usuarios()
     elif escolha == 'Sair':
