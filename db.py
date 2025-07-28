@@ -1,5 +1,7 @@
 import mysql.connector
 
+
+
 def conectar():
     return mysql.connector.connect(
         host='162.241.203.62',
@@ -32,6 +34,7 @@ def salvar_atendimento(usuario_id, cliente, descricao, status):
                     (usuario_id, cliente, descricao, status))
     conn.commit()
     cursor.close()
+
 
 def listar_atendimentos():
     conn = conectar()
