@@ -135,7 +135,7 @@ def tela_principal():
     st.sidebar.image('logonova.bmp', width=150)
     st.sidebar.write(f'👤 Usuário: {st.session_state.usuario["nome"]}')
 
-    menu = ['Registrar Atendimento', 'Meus Atendimentos']
+    menu = ['Registrar Atendimento', 'Meus Atendimentos', 'Cadastrar Cliente']
     if st.session_state.usuario['papel'] == 'admin':
         menu.extend(['Painel de Administração', 'Gerenciar Usuários'])
     menu.append('Sair')
