@@ -94,6 +94,20 @@ def paniel_admin():
     atendimentos = db.listar_atendimentos()
     st.dataframe(atendimentos)
 
+def cadastrar_cliente():
+    st.title("Cadastrar Novo Cliente")
+
+    cliente = st.text_input("Razão Social")
+    fantasia = st.text_input("Nome Fantasia")
+    cnpj = st.text_input("CNPJ")
+
+    if st.button("Salvar"):
+        if nome.strip() == "":
+            st.warning("Digite um nome válido.")
+        else:
+            db.cadastrar_cliente(nome.strip())
+            st.success("Cliente cadastrado com sucesso!")
+
 def gerenciar_usuarios():
     st.title("Gerenciar Usuários")
     usuarios = db.listar_usuarios()
