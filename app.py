@@ -132,15 +132,15 @@ def cadastrar_cliente():
     municipio = st.text_input("Município", value=municipio)
     uf = st.text_input("UF", value=uf)
 
-   if st.button("Salvar Cliente"):
-        if not cnpj or not razao:
-            st.error("CNPJ e Razão Social são obrigatórios.")
-        elif db.cnpj_existe(cnpj):
-            st.error("Este CNPJ já está cadastrado.")
-        else:
-            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf)
-            st.success("Cliente cadastrado com sucesso!")
-            st.rerun()
+       if st.button("Salvar Cliente"):
+            if not cnpj or not razao:
+                st.error("CNPJ e Razão Social são obrigatórios.")
+            elif db.cnpj_existe(cnpj):
+                st.error("Este CNPJ já está cadastrado.")
+            else:
+                db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf)
+                st.success("Cliente cadastrado com sucesso!")
+                st.rerun()
 
 def gerenciar_usuarios():
     st.title("Gerenciar Usuários")
