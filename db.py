@@ -30,7 +30,7 @@ datetime_str = datetime.now().strftime('%Y%m%d %H:%M:%S')
 def salvar_atendimento(usuario_id, cliente, descricao, status):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status, data) VALUES (%s, %s, %s, %s)",
+    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status, data) VALUES (%s, %s, %s, %s, %s)",
                     (usuario_id, cliente, descricao, status, datetime_str))
     conn.commit()
     cursor.close()
