@@ -5,7 +5,7 @@ def conectar():
         host='162.241.203.62',
         user= 'avinfo61_servico',
         password='Sclara02',
-        database='atendimento'
+        database='avinfo61_atendimento'
     )
 
 def criar_usuario(nome, email, senha_hash, papel='usuario'):
