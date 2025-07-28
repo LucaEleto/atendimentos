@@ -108,7 +108,7 @@ def cadastrar_cliente_completo(cnpj, razao_social, nome_fantasia, endereco, muni
 def cnpj_existe(cnpj):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("SELECT id FROM clientes WHERE cnpj = %s", (cnpj,))
+    cursor.execute("SELECT codigo FROM clientes WHERE cnpj = %s", (cnpj,))
     resultado = cursor.fetchone()
     conn.close()
     return resultado is not None
