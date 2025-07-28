@@ -94,7 +94,7 @@ def paniel_admin():
     atendimentos = db.listar_atendimentos()
     st.dataframe(atendimentos)
 
-def cadastrar_cliente(nome):
+def cadastrar_cliente():
     st.title("Cadastrar Novo Cliente")
 
     cliente = st.text_input("Razão Social")
