@@ -149,7 +149,7 @@ def tela_principal():
     elif escolha == 'Painel de Administração':
         paniel_admin()
     elif escolha == 'Cadastar Cliente':
-        cadastar_cliente()
+        cadastrar_cliente()
     elif escolha == 'Gerenciar Usuários':
         gerenciar_usuarios()
     elif escolha == 'Sair':
