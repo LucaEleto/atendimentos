@@ -148,7 +148,7 @@ def tela_principal():
         meus_atendimentos()
     elif escolha == 'Painel de Administração':
         paniel_admin()
-    elif escolha == 'Cadastar Cliente':
+    elif escolha == "Cadastrar Cliente":
         cadastrar_cliente()
     elif escolha == 'Gerenciar Usuários':
         gerenciar_usuarios()
