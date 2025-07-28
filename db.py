@@ -60,3 +60,31 @@ def atualizar_papel_usuario(user_id, novo_papel):
     cursor.execute("UPDATE usuarios SET papel = %s WHERE id = %s", (novo_papel, user_id))
     conn.commit()
     conn.close()
+
+def listar_atendimentos_por_usuario(usuario_id):
+    conn = conectar()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT id, cliente, descricao, status, data
+        FROM atendimentos
+        WHERE usuario_id = %s
+        ORDER BY data DESC
+    """, (usuario_id,))
+    atendimentos = cursor.fetchall()
+    conn.close()
+    return atendimentos
+
+def atualizar_status_atendimento(atendimento_id, novo_status):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE atendimentos SET status = %s WHERE id = %s", (novo_status, atendimento_id))
+    conn.commit()
+    conn.close()
+
+def listar_cliente(parte_nome):
+    conn = conectar()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT codigo, cliente FROM clientes WHERE cliente LIKE %s ORDER BY cliente", (f'%{parte_nome}%',))
+    clientes = cursor.fetchall()
+    cursor.close()
+    return clientes
