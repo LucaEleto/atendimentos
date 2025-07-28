@@ -74,7 +74,7 @@ def tela_atendimentos():
     cliente_selecionado = None
     if nome_digitado.strip():
         resultado = db.listar_cliente(nome_digitado)
-        nomes = [cliente['cliente'] for cliente in resultado]
+        nomes = [razao_social['cliente'] for cliente in resultado]
 
         if len(nomes) == 1:
             cliente_selecionado = nomes[0]
