@@ -1,6 +1,7 @@
 import streamlit as st
 import db
 import auth
+import datetime
 
 st.set_page_config(page_title='Sistema De Atendimento', layout='wide')
 
@@ -33,13 +34,59 @@ def tela_registro():
             db.criar_usuario(nome, email, senha_hash)
             st.success('Usuário registrado com sucesso!')
 
+def meus_atendimentos():
+    st.title("Meus Atendimentos")
+    meus = db.listar_atendimentos_por_usuario(st.session_state.usuario['id'])
+
+    if not meus:
+        st.info("Você ainda não registrou atendimentos.")
+        return
+
+    # 🔽 Filtro por status
+    status_opcoes = ["Todos", "Aberto", "Pendente", "Concluído"]
+    status_filtro = st.selectbox("Filtrar por status:", status_opcoes)
+
+    if status_filtro != "Todos":
+        meus = [a for a in meus if a["status"] == status_filtro]
+
+    if not meus:
+        st.warning("Nenhum atendimento encontrado com esse status.")
+        return
+    
+    for atendimento in meus:
+        with st.expander(f"{atendimento['cliente']}"):
+            st.write("📋", atendimento["descricao"])
+            novo_status = st.selectbox(
+                "Status",
+                ["Aberto", "Pendente", "Concluído"],
+                index=["Aberto", "Pendente", "Concluído"].index(atendimento["status"]),
+                key=f"status_{atendimento['id']}"
+            )
+            if novo_status != atendimento["status"]:
+                db.atualizar_status_atendimento(atendimento["id"], novo_status)
+                st.success("Status atualizado.")
+                st.rerun()
+
 def tela_atendimentos():
     st.title('Registro de Atendimentos')
-    cliente = st.text_input('Cliente')
+    nome_digitado = st.text_input('Nome do Cliente')
+
+    cliente_selecionado = None
+    if nome_digitado.strip():
+        resultado = db.listar_cliente(nome_digitado)
+        nomes = [cliente['cliente'] for cliente in resultado]
+
+        if len(nomes) == 1:
+            cliente_selecionado = nomes[0]
+            st.success(f'Cliente selecionado: {cliente_selecionado}')
+        elif len(nomes) > 1:
+            cliente_selecionado = st.selectbox('Selecione o Cliente', nomes)
+        else:
+            st.warning('Nenhum cliente encontrado com esse nome.')   
     descricao = st.text_area('Descrição')
     status = st.selectbox('Status', ['Pendente', 'Em Progresso', 'Concluído'])
     if st.button('Salvar Atendimento'):
-        db.salvar_atendimento(st.session_state.usuario['id'], cliente, descricao, status)
+        db.salvar_atendimento(st.session_state.usuario['id'], cliente_selecionado, descricao, status)
         st.success('Atendimento registrado com sucesso!')
 
 def paniel_admin():
@@ -74,7 +121,7 @@ def tela_principal():
     st.sidebar.image('logonova.bmp', width=150)
     st.sidebar.write(f'👤 Usuário: {st.session_state.usuario["nome"]}')
 
-    menu = ['Registrar Atendimento']
+    menu = ['Registrar Atendimento', 'Meus Atendimentos']
     if st.session_state.usuario['papel'] == 'admin':
         menu.extend(['Painel de Administração', 'Gerenciar Usuários'])
     menu.append('Sair')
@@ -83,6 +130,8 @@ def tela_principal():
 
     if escolha == 'Registrar Atendimento':
         tela_atendimentos()
+    elif escolha == "Meus Atendimentos":
+        meus_atendimentos()
     elif escolha == 'Painel de Administração':
         paniel_admin()
     elif escolha == 'Gerenciar Usuários':
@@ -101,3 +150,4 @@ else:
         tela_login()
     else:
         tela_registro()
+
