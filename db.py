@@ -30,7 +30,7 @@ def buscar_usuario_por_email(email):
 def salvar_atendimento(usuario_id, cliente, descricao, status):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
+    cursor.execute("INSERT INTO atendimentos (id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
                     (usuario_id, cliente, descricao, status))
     conn.commit()
     cursor.close()
@@ -70,7 +70,7 @@ def listar_atendimentos_por_usuario(usuario_id):
     cursor.execute("""
         SELECT id, cliente, descricao, status, data
         FROM atendimentos
-        WHERE usuario_id = %s
+        WHERE id = %s
         ORDER BY data DESC
     """, (usuario_id,))
     atendimentos = cursor.fetchall()
@@ -113,3 +113,36 @@ def cnpj_existe(cnpj):
     resultado = cursor.fetchone()
     conn.close()
     return resultado is not None
+
+def buscar_cliente_por_cnpj(cnpj):
+    conn = conectar()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM clientes WHERE cnpj = %s", (cnpj,))
+    cliente = cursor.fetchone()
+    conn.close()
+    return cliente
+
+def atualizar_cliente_por_cnpj(cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
+                                email_cliente, contato_cliente, nome_contabilidade, email_contabilidade,
+                                contato_contabilidade, observacao):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE clientes SET 
+            razao_social = %s,
+            nome_fantasia = %s,
+            endereco = %s,
+            municipio = %s,
+            uf = %s,
+            email_cliente = %s,
+            contato_cliente = %s,
+            nome_contabilidade = %s,
+            email_contabilidade = %s,
+            contato_contabilidade = %s,
+            observacao = %s
+        WHERE cnpj = %s
+    """, (razao_social, nome_fantasia, endereco, municipio, uf,
+          email_cliente, contato_cliente, nome_contabilidade,
+          email_contabilidade, contato_contabilidade, observacao, cnpj))
+    conn.commit()
+    conn.close()
