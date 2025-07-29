@@ -84,7 +84,7 @@ def tela_atendimentos():
         else:
             st.warning('Nenhum cliente encontrado com esse nome.')   
     descricao = st.text_area('Descrição')
-    status = st.selectbox('Status', ['Pendente', 'Em Progresso', 'Concluído'])
+    status = st.selectbox('Status', ['Aberto', 'Pendente', 'Concluído'])
     if st.button('Salvar Atendimento'):
         db.salvar_atendimento(st.session_state.usuario['id'], cliente_selecionado, descricao, status)
         st.success('Atendimento registrado com sucesso!')
