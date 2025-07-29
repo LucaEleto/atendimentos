@@ -56,7 +56,19 @@ def meus_atendimentos():
     
     for atendimento in meus:
         with st.expander(f"{atendimento['cliente']}"):
-            st.write("📋", atendimento["descricao"])
+            # Editar descrição
+            nova_descricao = st.text_area(
+                "Descrição",
+                value=atendimento["descricao"],
+                key=f"desc_{atendimento['id']}"
+            )
+            if nova_descricao != atendimento["descricao"]:
+                if st.button("Salvar Descrição", key=f"salvar_desc_{atendimento['id']}"):
+                    db.atualizar_descricao_atendimento(atendimento["id"], nova_descricao)
+                    st.success("Descrição atualizada.")
+                    st.rerun()
+
+            # Editar status
             novo_status = st.selectbox(
                 "Status",
                 ["Aberto", "Pendente", "Concluído"],
@@ -67,29 +79,73 @@ def meus_atendimentos():
                 db.atualizar_status_atendimento(atendimento["id"], novo_status)
                 st.success("Status atualizado.")
                 st.rerun()
+
+            # Excluir atendimento
+            if st.button("Excluir Atendimento", key=f"excluir_{atendimento['id']}"):
+                db.excluir_atendimento(atendimento["id"])
+                st.success("Atendimento excluído.")
+                st.rerun()
                 
 
 def tela_atendimentos():
     st.title('Registro de Atendimentos')
-    nome_digitado = st.text_input('Nome do Cliente')
+    nome_digitado = st.text_input('Nome, CNPJ ou Fantasia do Cliente')
+    cliente_selecionado = st.session_state.get('cliente_selecionado', None)
 
-    cliente_selecionado = None
-    if nome_digitado.strip():
+    if 'clientes_filtrados' not in st.session_state:
+        st.session_state.clientes_filtrados = []
+
+    # Limpa seleção ANTES de criar o radio, se necessário
+    if st.button('🔍 Buscar Cliente'):
         resultado = db.listar_cliente(nome_digitado)
-        nomes = [razao_social['razao_social'] for razao_social in resultado]
-
-        if len(nomes) == 1:
-            cliente_selecionado = nomes[0]
-            st.success(f'Cliente selecionado: {cliente_selecionado}')
-        elif len(nomes) > 1:
-            cliente_selecionado = st.selectbox('Selecione o Cliente', nomes)
+        if resultado:
+            df_clientes = pd.DataFrame(resultado)
+            df_clientes['exibir'] = df_clientes.apply(
+                lambda row: f"{row.get('cnpj', '')} - {row['razao_social']} ({row.get('nome_fantasia', '')})", axis=1
+            )
+            st.session_state.clientes_filtrados = df_clientes.to_dict('records')
+            # Limpa seleção antes de criar o radio
+            if 'radio_cliente' in st.session_state:
+                del st.session_state.radio_cliente
         else:
-            st.warning('Nenhum cliente encontrado com esse nome.')   
+            st.session_state.clientes_filtrados = []
+            st.warning('Nenhum cliente encontrado com esse filtro.')
+
+    if st.session_state.clientes_filtrados:
+        opcoes = [
+            f"{c['cnpj']} - {c['razao_social']} ({c['nome_fantasia']})"
+            for c in st.session_state.clientes_filtrados
+        ]
+        selecionado = st.radio(
+            "Clientes encontrados:",
+            options=opcoes,
+            key="radio_cliente"
+        )
+        if st.button("Selecionar este cliente"):
+            idx = opcoes.index(selecionado)
+            st.session_state.cliente_selecionado = st.session_state.clientes_filtrados[idx]['razao_social']
+            st.success(f'Cliente selecionado: {selecionado}')
+
+    elif cliente_selecionado:
+        st.success(f'Cliente selecionado: {cliente_selecionado}')
+
     descricao = st.text_area('Descrição')
-    status = st.selectbox('Status', ['Pendente', 'Em Progresso', 'Concluído'])
+    status = st.selectbox('Status', ['Aberto', 'Pendente', 'Concluído'])
     if st.button('Salvar Atendimento'):
-        db.salvar_atendimento(st.session_state.usuario['id'], cliente_selecionado, descricao, status)
-        st.success('Atendimento registrado com sucesso!')
+        if not st.session_state.get('cliente_selecionado'):
+            st.error('Selecione um cliente antes de salvar.')
+        else:
+            db.salvar_atendimento(
+                st.session_state.usuario['id'],
+                st.session_state.cliente_selecionado,
+                descricao,
+                status
+            )
+            st.success('Atendimento registrado com sucesso!')
+            st.session_state.cliente_selecionado = None
+            st.session_state.clientes_filtrados = []
+            if 'radio_cliente' in st.session_state:
+                del st.session_state.radio_cliente
 
 def paniel_admin():
     st.title('Painel de Administração')
@@ -317,7 +373,7 @@ def tela_principal():
 
     menu = ['Registrar Atendimento', 'Meus Atendimentos', 'Cadastrar Cliente', 'Consulta Licença']
     if st.session_state.usuario['papel'] == 'admin':
-        menu.extend(['Atualizar Licença', 'Painel de Administração', 'Gerenciar Usuários'])
+        menu.extend(['Painel de Administração', 'Atualizar Licença', 'Gerenciar Usuários'])
     menu.append('Sair')
 
     escolha = st.sidebar.selectbox('Menu', menu)
