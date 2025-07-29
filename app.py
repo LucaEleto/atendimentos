@@ -2,6 +2,7 @@ import streamlit as st
 import db
 import auth
 import requests
+import pandas as pd
 
 st.set_page_config(page_title='Sistema De Atendimento', layout='wide')
 
@@ -66,6 +67,7 @@ def meus_atendimentos():
                 db.atualizar_status_atendimento(atendimento["id"], novo_status)
                 st.success("Status atualizado.")
                 st.rerun()
+                
 
 def tela_atendimentos():
     st.title('Registro de Atendimentos')
@@ -84,7 +86,7 @@ def tela_atendimentos():
         else:
             st.warning('Nenhum cliente encontrado com esse nome.')   
     descricao = st.text_area('Descrição')
-    status = st.selectbox('Status', ['Aberto', 'Pendente', 'Concluído'])
+    status = st.selectbox('Status', ['Pendente', 'Em Progresso', 'Concluído'])
     if st.button('Salvar Atendimento'):
         db.salvar_atendimento(st.session_state.usuario['id'], cliente_selecionado, descricao, status)
         st.success('Atendimento registrado com sucesso!')
@@ -106,49 +108,185 @@ def buscar_dados_cnpj(cnpj):
     return None
     
 def cadastrar_cliente():
-    st.title("Cadastrar Novo Cliente")
+    st.title("Cadastro de Cliente")
 
     cnpj = st.text_input("CNPJ (somente números)", max_chars=14)
 
-    if len(cnpj) == 14:
-        dados = buscar_dados_cnpj(cnpj)
-        if dados:
-            razao = dados.get("nome", "")
-            fantasia = dados.get("fantasia", "")
-            endereco = f"{dados.get('logradouro', '')}, {dados.get('numero', '')} - {dados.get('bairro', '')}"
-            municipio = dados.get("municipio", "")
-            uf = dados.get("uf", "")
-            st.success("Dados carregados com sucesso!")
-        else:
-            st.warning("CNPJ não encontrado ou excedeu o limite de requisições.")
-            razao = fantasia = endereco = municipio = uf = ""
-    else:
-        razao = fantasia = endereco = municipio = uf = ""
+    # Inicializa os campos vazios
+    dados_api = None
+    razao = fantasia = endereco = municipio = uf = ""
+    email_cliente = contato_cliente = nome_contabilidade = ""
+    email_contabilidade = contato_contabilidade = observacao = ""
 
-    # Permitir editar os campos
+    cliente_existente = None
+
+    if len(cnpj) == 14:
+        cliente_existente = db.buscar_cliente_por_cnpj(cnpj)
+        dados_api = buscar_dados_cnpj(cnpj)
+
+    if cliente_existente:
+        st.info("CNPJ já cadastrado. Os dados foram carregados para edição.")
+        # Campos do banco
+        razao = cliente_existente.get("razao_social", "")
+        fantasia = cliente_existente.get("nome_fantasia", "")
+        email_cliente = cliente_existente.get("email_cliente", "")
+        contato_cliente = cliente_existente.get("contato_cliente", "")
+        nome_contabilidade = cliente_existente.get("nome_contabilidade", "")
+        email_contabilidade = cliente_existente.get("email_contabilidade", "")
+        contato_contabilidade = cliente_existente.get("contato_contabilidade", "")
+        observacao = cliente_existente.get("observacao", "")
+
+        # Se a API respondeu, sobrescreve o endereço, município e UF
+        if dados_api:
+            endereco = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
+            municipio = dados_api.get("municipio", "")
+            uf = dados_api.get("uf", "")
+        else:
+            endereco = cliente_existente.get("endereco", "")
+            municipio = cliente_existente.get("municipio", "")
+            uf = cliente_existente.get("uf", "")
+    else:
+        # Novo cliente, busca tudo da API
+        if dados_api:
+            razao = dados_api.get("nome", "")
+            fantasia = dados_api.get("fantasia", "")
+            endereco = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
+            municipio = dados_api.get("municipio", "")
+            uf = dados_api.get("uf", "")
+            st.success("Dados carregados da Receita Federal.")
+        else:
+            st.warning("CNPJ não encontrado ou excedeu o limite da API.")
+
+    # Formulário editável
     razao = st.text_input("Razão Social", value=razao)
     fantasia = st.text_input("Nome Fantasia", value=fantasia)
     endereco = st.text_input("Endereço", value=endereco)
     municipio = st.text_input("Município", value=municipio)
     uf = st.text_input("UF", value=uf)
-    email_cliente = st.text_input("Email do Cliente")
-    contato_cliente = st.text_input("Contato do Cliente")
-    nome_contabilidade = st.text_input("Nome da Contabilidade")
-    email_contabilidade = st.text_input("Email da Contabilidade")
-    contato_contabilidade = st.text_input("Contato da Contabilidade")
-    observacao = st.text_area("Observações")
-
-
+    email_cliente = st.text_input("Email do Cliente", value=email_cliente)
+    contato_cliente = st.text_input("Contato do Cliente", value=contato_cliente)
+    nome_contabilidade = st.text_input("Nome da Contabilidade", value=nome_contabilidade)
+    email_contabilidade = st.text_input("Email da Contabilidade", value=email_contabilidade)
+    contato_contabilidade = st.text_input("Contato da Contabilidade", value=contato_contabilidade)
+    observacao = st.text_area("Observações", value=observacao)
 
     if st.button("Salvar Cliente"):
         if not cnpj or not razao:
             st.error("CNPJ e Razão Social são obrigatórios.")
-        elif db.cnpj_existe(cnpj):
-            st.error("Este CNPJ já está cadastrado.")
+        elif cliente_existente:
+            db.atualizar_cliente_por_cnpj(cnpj, razao, fantasia, endereco, municipio, uf,
+                                          email_cliente, contato_cliente, nome_contabilidade,
+                                          email_contabilidade, contato_contabilidade, observacao)
+            st.success("Cliente atualizado com sucesso!")
+            st.rerun()
         else:
-            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao)
+            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf,
+                                          email_cliente, contato_cliente, nome_contabilidade,
+                                          email_contabilidade, contato_contabilidade, observacao)
             st.success("Cliente cadastrado com sucesso!")
             st.rerun()
+
+def consulta_licenca():
+
+    st.title('Consulta Licenças') 
+
+    # Entrada do usuário
+    consulta_sql_input = st.text_input('Pesquisar Cliente')
+
+    # Consulta SQL
+    consulta_sql = """
+    SELECT razao_social, nome_fantasia, dias 
+    FROM clientes 
+    WHERE razao_social LIKE %s OR nome_fantasia LIKE %s
+    """
+
+    # Ação ao clicar no botão
+    if st.button('Pesquisar'):
+        conn = db.conectar()
+        cursor_consulta = conn.cursor()
+        # Passando o mesmo valor duas vezes para os dois campos do LIKE
+        cursor_consulta.execute(consulta_sql, (f'%{consulta_sql_input}%', f'%{consulta_sql_input}%'))
+        cliente_consulta = cursor_consulta.fetchall()
+        cursor_consulta.close()
+
+        # Exibindo os resultados
+        if cliente_consulta:
+            tb = pd.DataFrame(cliente_consulta, columns=['Razao Social', 'Nome Fantasia', 'Dias'])
+            st.subheader('Consulta Cliente')
+            st.dataframe(tb)
+        else:
+            st.warning("Nenhum cliente encontrado.")
+
+def atualiza_licenca():
+    st.title('Atualizar Dias de Licença')
+
+    # Inicializar session_state para armazenar DataFrame
+    if 'df_original' not in st.session_state:
+        st.session_state.df_original = None
+
+    # Entrada de busca
+    busca = st.text_input('Pesquisar Cliente (Razao Social ou Nome Fantasia)')
+
+    # Botão de busca
+    if st.button('Buscar'):
+        conn = db.conectar()
+        cursor = conn.cursor()
+        consulta = """
+            SELECT razao_social, nome_fantasia, dias, vencimento 
+            FROM clientes 
+            WHERE razao_social LIKE %s OR nome_fantasia LIKE %s
+        """
+        cursor.execute(consulta, (f"%{busca}%", f"%{busca}%"))
+        resultados = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        if resultados:
+            df = pd.DataFrame(resultados, columns=['Razao Social', 'Nome Fantasia', 'Dias', 'Vencimento'])
+            st.session_state.df_original = df  # salva na sessão
+        else:
+            st.warning("Nenhum cliente encontrado.")
+            st.session_state.df_original = None  # limpa
+
+    # Mostrar editor se houver dados
+    if st.session_state.df_original is not None:
+        st.subheader('Editar Dias')
+        df_editado = st.data_editor(
+            st.session_state.df_original,
+            num_rows="dynamic",
+            use_container_width=True,
+            key='editor'
+        )
+
+        # Botão para salvar
+        if st.button('Salvar Alterações'):
+            conn = db.conectar()
+            cursor = conn.cursor()
+            linhas_afetadas = 0
+
+            for index, row in df_editado.iterrows():
+                razao_social = row['Razao Social']
+                dias_novo = row['Dias']
+                try:
+                    cursor.execute(
+                        "UPDATE clientes SET dias = %s WHERE razao_social = %s",
+                        (dias_novo, razao_social)
+                    )
+                    if cursor.rowcount > 0:
+                        linhas_afetadas += 1
+                except Exception as e:
+                    st.error(f"Erro ao atualizar cliente {razao_social}: {e}")
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            if linhas_afetadas > 0:
+                st.success(f"{linhas_afetadas} registro(s) atualizado(s) com sucesso!")
+            else:
+                st.info("Nenhuma alteração detectada ou salva.")
+    
+
 
 def gerenciar_usuarios():
     st.title("Gerenciar Usuários")
@@ -177,9 +315,9 @@ def tela_principal():
     st.sidebar.image('logonova.bmp', width=150)
     st.sidebar.write(f'👤 Usuário: {st.session_state.usuario["nome"]}')
 
-    menu = ['Registrar Atendimento', 'Meus Atendimentos', 'Cadastrar Cliente']
+    menu = ['Registrar Atendimento', 'Meus Atendimentos', 'Cadastrar Cliente', 'Consulta Licença']
     if st.session_state.usuario['papel'] == 'admin':
-        menu.extend(['Painel de Administração', 'Gerenciar Usuários'])
+        menu.extend(['Painel de Administração', 'Gerenciar Usuários', 'Atualizar Licença'])
     menu.append('Sair')
 
     escolha = st.sidebar.selectbox('Menu', menu)
@@ -192,6 +330,10 @@ def tela_principal():
         paniel_admin()
     elif escolha == "Cadastrar Cliente":
         cadastrar_cliente()
+    elif escolha == "Consulta Licença":
+        consulta_licenca()
+    elif escolha == "Atualizar Licença":
+        atualiza_licenca()
     elif escolha == 'Gerenciar Usuários':
         gerenciar_usuarios()
     elif escolha == 'Sair':
