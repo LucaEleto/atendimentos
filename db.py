@@ -30,7 +30,7 @@ def buscar_usuario_por_email(email):
 def salvar_atendimento(usuario_id, cliente, descricao, status):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO atendimentos (id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
+    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
                     (usuario_id, cliente, descricao, status))
     conn.commit()
     cursor.close()
@@ -87,7 +87,7 @@ def atualizar_status_atendimento(atendimento_id, novo_status):
 def listar_cliente(parte_nome):
     conn = conectar()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT codigo, razao_social FROM clientes WHERE razao_social LIKE %s ORDER BY razao_social", (f'%{parte_nome}%',))
+    cursor.execute("SELECT codigo, cnpj, razao_social, nome_fantasia FROM clientes WHERE razao_social LIKE %s ORDER BY razao_social", (f'%{parte_nome}%',))
     clientes = cursor.fetchall()
     cursor.close()
     return clientes
@@ -144,5 +144,19 @@ def atualizar_cliente_por_cnpj(cnpj, razao_social, nome_fantasia, endereco, muni
     """, (razao_social, nome_fantasia, endereco, municipio, uf,
           email_cliente, contato_cliente, nome_contabilidade,
           email_contabilidade, contato_contabilidade, observacao, cnpj))
+    conn.commit()
+    conn.close()
+
+def excluir_atendimento(atendimento_id):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM atendimentos WHERE id = %s", (atendimento_id,))
+    conn.commit()
+    conn.close()
+
+def atualizar_descricao_atendimento(atendimento_id, nova_descricao):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE atendimentos SET descricao = %s WHERE id = %s", (nova_descricao, atendimento_id))
     conn.commit()
     conn.close()
