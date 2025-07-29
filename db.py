@@ -148,12 +148,14 @@ def atualizar_cliente_por_cnpj(cnpj, razao_social, nome_fantasia, endereco, muni
             contato_contabilidade = %s,
             observacao = %s
         WHERE cnpj = %s
-    """, (razao_social, nome_fantasia, endereco, municipio, uf,
-          email_cliente, contato_cliente, nome_contabilidade,
-          email_contabilidade, contato_contabilidade, observacao, cnpj))
+    """, (
+        razao_social, nome_fantasia, endereco, municipio, uf,
+        email_cliente, contato_cliente, nome_contabilidade,
+        email_contabilidade, contato_contabilidade, observacao, cnpj
+    ))
     conn.commit()
+    cursor.close()
     conn.close()
-
 def excluir_atendimento(atendimento_id):
     conn = conectar()
     cursor = conn.cursor()
