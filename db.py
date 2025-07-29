@@ -70,7 +70,7 @@ def listar_atendimentos_por_usuario(usuario_id):
     cursor.execute("""
         SELECT id, cliente, descricao, status, data
         FROM atendimentos
-        WHERE id = %s
+        WHERE usuario_id = %s
         ORDER BY data DESC
     """, (usuario_id,))
     atendimentos = cursor.fetchall()
