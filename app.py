@@ -17,7 +17,6 @@ def tela_login():
         usuario = auth.login(email, senha)
         if usuario:
             st.session_state.usuario = usuario
-            st.success(f'Bem-vindo, {usuario["nome"]}!')
         else:
             st.error('Email ou senha incorretos.')
 
