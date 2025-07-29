@@ -37,6 +37,7 @@ def tela_registro():
 
 def meus_atendimentos():
     st.title("Meus Atendimentos")
+
     meus = db.listar_atendimentos_por_usuario(st.session_state.usuario['id'])
 
     if not meus:
@@ -95,7 +96,6 @@ def tela_atendimentos():
     if 'clientes_filtrados' not in st.session_state:
         st.session_state.clientes_filtrados = []
 
-    # Limpa seleção ANTES de criar o radio, se necessário
     if st.button('🔍 Buscar Cliente'):
         resultado = db.listar_cliente(nome_digitado)
         if resultado:
@@ -104,7 +104,6 @@ def tela_atendimentos():
                 lambda row: f"{row.get('cnpj', '')} - {row['razao_social']} ({row.get('nome_fantasia', '')})", axis=1
             )
             st.session_state.clientes_filtrados = df_clientes.to_dict('records')
-            # Limpa seleção antes de criar o radio
             if 'radio_cliente' in st.session_state:
                 del st.session_state.radio_cliente
         else:
@@ -123,11 +122,18 @@ def tela_atendimentos():
         )
         if st.button("Selecionar este cliente"):
             idx = opcoes.index(selecionado)
-            st.session_state.cliente_selecionado = st.session_state.clientes_filtrados[idx]['razao_social']
+            cliente = st.session_state.clientes_filtrados[idx]
+            st.session_state.cliente_selecionado = cliente['razao_social']
+            st.session_state.observacao_cliente = cliente.get('observacao', '')
             st.success(f'Cliente selecionado: {selecionado}')
 
     elif cliente_selecionado:
         st.success(f'Cliente selecionado: {cliente_selecionado}')
+
+    # Exibe a observação do cliente selecionado, se houver
+    observacao_cliente = st.session_state.get('observacao_cliente', '')
+    if observacao_cliente:
+        st.info(f"Observação do cliente: {observacao_cliente}")
 
     descricao = st.text_area('Descrição')
     status = st.selectbox('Status', ['Aberto', 'Pendente', 'Concluído'])
@@ -144,6 +150,7 @@ def tela_atendimentos():
             st.success('Atendimento registrado com sucesso!')
             st.session_state.cliente_selecionado = None
             st.session_state.clientes_filtrados = []
+            # NÃO limpe observacao_cliente aqui!
             if 'radio_cliente' in st.session_state:
                 del st.session_state.radio_cliente
 
@@ -166,25 +173,46 @@ def buscar_dados_cnpj(cnpj):
 def cadastrar_cliente():
     st.title("Cadastro de Cliente")
 
-    cnpj = st.text_input("CNPJ (somente números)", max_chars=14)
+    # Campo de busca em primeiro lugar
+    busca = st.text_input("Buscar por CNPJ, Razão Social ou Nome Fantasia")
 
     # Inicializa os campos vazios
     dados_api = None
-    razao = fantasia = endereco = municipio = uf = ""
+    cnpj = razao = fantasia = endereco = municipio = uf = ""
     email_cliente = contato_cliente = nome_contabilidade = ""
     email_contabilidade = contato_contabilidade = observacao = ""
 
     cliente_existente = None
 
-    if len(cnpj) == 14:
-        cliente_existente = db.buscar_cliente_por_cnpj(cnpj)
-        dados_api = buscar_dados_cnpj(cnpj)
+    # Busca no banco por CNPJ, razão social ou nome fantasia
+    if busca:
+        if len(busca) == 14 and busca.isdigit():
+            cliente_existente = db.buscar_cliente_por_cnpj(busca)
+            if cliente_existente:
+                cnpj = cliente_existente.get("cnpj", busca)
+        else:
+            resultado = db.listar_cliente(busca)
+            if resultado:
+                if len(resultado) > 1:
+                    opcoes = [
+                        f"{c['cnpj']} - {c['razao_social']} ({c['nome_fantasia']})"
+                        for c in resultado
+                    ]
+                    selecionado = st.selectbox("Selecione o cliente encontrado:", opcoes)
+                    idx = opcoes.index(selecionado)
+                    cliente_existente = resultado[idx]
+                else:
+                    cliente_existente = resultado[0]
+            if cliente_existente:
+                cnpj = cliente_existente.get("cnpj", "")
 
+    # Preenche todos os campos se encontrou cliente
     if cliente_existente:
-        st.info("CNPJ já cadastrado. Os dados foram carregados para edição.")
-        # Campos do banco
         razao = cliente_existente.get("razao_social", "")
         fantasia = cliente_existente.get("nome_fantasia", "")
+        endereco = cliente_existente.get("endereco", "")
+        municipio = cliente_existente.get("municipio", "")
+        uf = cliente_existente.get("uf", "")
         email_cliente = cliente_existente.get("email_cliente", "")
         contato_cliente = cliente_existente.get("contato_cliente", "")
         nome_contabilidade = cliente_existente.get("nome_contabilidade", "")
@@ -192,30 +220,30 @@ def cadastrar_cliente():
         contato_contabilidade = cliente_existente.get("contato_contabilidade", "")
         observacao = cliente_existente.get("observacao", "")
 
-        # Se a API respondeu, sobrescreve o endereço, município e UF
-        if dados_api:
-            endereco = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
-            municipio = dados_api.get("municipio", "")
-            uf = dados_api.get("uf", "")
-        else:
-            endereco = cliente_existente.get("endereco", "")
-            municipio = cliente_existente.get("municipio", "")
-            uf = cliente_existente.get("uf", "")
-    else:
-        # Novo cliente, busca tudo da API
-        if dados_api:
-            razao = dados_api.get("nome", "")
-            fantasia = dados_api.get("fantasia", "")
-            endereco = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
-            municipio = dados_api.get("municipio", "")
-            uf = dados_api.get("uf", "")
-            st.success("Dados carregados da Receita Federal.")
-        else:
-            st.warning("CNPJ não encontrado ou excedeu o limite da API.")
-
-    # Formulário editável
+    # Campos do formulário
+    
+    
     razao = st.text_input("Razão Social", value=razao)
     fantasia = st.text_input("Nome Fantasia", value=fantasia)
+    cnpj = st.text_input("CNPJ para consulta na Receita Federal", value=cnpj, max_chars=14)
+
+    # Consulta na API da Receita Federal
+    if st.button("Buscar na Receita Federal"):
+        if len(cnpj) == 14 and cnpj.isdigit():
+            dados_api = buscar_dados_cnpj(cnpj)
+            if dados_api:
+                razao = dados_api.get("nome", "")
+                fantasia = dados_api.get("fantasia", "")
+                endereco = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
+                municipio = dados_api.get("municipio", "")
+                uf = dados_api.get("uf", "")
+                st.success("Dados carregados da Receita Federal.")
+            else:
+                st.warning("CNPJ não encontrado ou excedeu o limite da API.")
+        else:
+            st.warning("Digite um CNPJ válido para consulta.")
+
+
     endereco = st.text_input("Endereço", value=endereco)
     municipio = st.text_input("Município", value=municipio)
     uf = st.text_input("UF", value=uf)
