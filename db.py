@@ -87,9 +87,16 @@ def atualizar_status_atendimento(atendimento_id, novo_status):
 def listar_cliente(parte_nome):
     conn = conectar()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT codigo, cnpj, razao_social, nome_fantasia FROM clientes WHERE razao_social LIKE %s ORDER BY razao_social", (f'%{parte_nome}%',))
+    cursor.execute("""
+        SELECT cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
+               email_cliente, contato_cliente, nome_contabilidade,
+               email_contabilidade, contato_contabilidade, observacao
+        FROM clientes
+        WHERE cnpj LIKE %s OR razao_social LIKE %s OR nome_fantasia LIKE %s
+    """, (f"%{parte_nome}%", f"%{parte_nome}%", f"%{parte_nome}%"))
     clientes = cursor.fetchall()
     cursor.close()
+    conn.close()
     return clientes
 
 def cadastrar_cliente_completo(cnpj, razao_social, nome_fantasia, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao):
