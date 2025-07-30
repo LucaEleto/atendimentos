@@ -446,7 +446,7 @@ def tela_principal():
 
     menu = ['Registrar Atendimento', 'Meus Atendimentos', 'Cadastrar Cliente', 'Consulta Licença']
     if st.session_state.usuario['papel'] == 'admin':
-        menu.extend(['Painel de Administração', 'Atualizar Licença', 'Gerenciar Usuários'])
+        menu.extend(['Atualizar Licença', 'Painel de Administração', 'Gerenciar Usuários'])
     menu.append('Sair')
 
     escolha = st.sidebar.selectbox('Menu', menu)
