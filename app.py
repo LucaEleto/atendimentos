@@ -3,6 +3,7 @@ import db
 import auth
 import requests
 import pandas as pd
+import datetime
 
 st.set_page_config(page_title='Sistema De Atendimento', layout='wide')
 
@@ -57,6 +58,19 @@ def meus_atendimentos():
     
     for atendimento in meus:
         with st.expander(f"{atendimento['cliente']}"):
+            try:
+                data_obj = datetime.datetime.strptime(str(atendimento["data"]), "%Y-%m-%d %H:%M:%S")
+                data_formatada = data_obj.strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                data_formatada = atendimento["data"]  # fallback se não conseguir converter
+            if atendimento.get("data_fin"):
+                try:
+                    data_fin_obj = datetime.datetime.strptime(str(atendimento["data_fin"]), "%Y-%m-%d %H:%M:%S")
+                    data_fin_formatada = data_fin_obj.strftime("%d/%m/%Y %H:%M")
+                except Exception:
+                    data_fin_formatada = atendimento["data_fin"]
+                st.markdown(f'**Finalizado em:** {data_fin_formatada}')
+            st.markdown(f'**Data do atendimento:** {data_formatada}')
             # Editar descrição
             nova_descricao = st.text_area(
                 "Descrição",
@@ -220,53 +234,77 @@ def cadastrar_cliente():
         contato_contabilidade = cliente_existente.get("contato_contabilidade", "")
         observacao = cliente_existente.get("observacao", "")
 
-    # Campos do formulário
-    
-    
-    razao = st.text_input("Razão Social", value=razao)
-    fantasia = st.text_input("Nome Fantasia", value=fantasia)
-    cnpj = st.text_input("CNPJ para consulta na Receita Federal", value=cnpj, max_chars=14)
+    # Antes dos widgets, inicialize no session_state se ainda não existir
+    for campo, valor_inicial in [
+        ("razao", razao),
+        ("fantasia", fantasia),
+        ("cnpj", cnpj),
+        ("endereco", endereco),
+        ("municipio", municipio),
+        ("uf", uf),
+        ("email_cliente", email_cliente),
+        ("contato_cliente", contato_cliente),
+        ("nome_contabilidade", nome_contabilidade),
+        ("email_contabilidade", email_contabilidade),
+        ("contato_contabilidade", contato_contabilidade),
+        ("observacao", observacao)
+    ]:
+        if campo not in st.session_state:
+            st.session_state[campo] = valor_inicial
 
-    # Consulta na API da Receita Federal
+    # Campos do formulário usando session_state
+    st.session_state['cnpj'] = st.text_input("CNPJ", value=st.session_state['cnpj'], max_chars=14)
+
+    # Botão para buscar na Receita Federal logo abaixo do campo CNPJ
     if st.button("Buscar na Receita Federal"):
+        cnpj = st.session_state['cnpj']
         if len(cnpj) == 14 and cnpj.isdigit():
             dados_api = buscar_dados_cnpj(cnpj)
             if dados_api:
-                razao = dados_api.get("nome", "")
-                fantasia = dados_api.get("fantasia", "")
-                endereco = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
-                municipio = dados_api.get("municipio", "")
-                uf = dados_api.get("uf", "")
+                st.session_state['razao'] = dados_api.get("nome", "")
+                st.session_state['fantasia'] = dados_api.get("fantasia", "")
+                st.session_state['endereco'] = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
+                st.session_state['municipio'] = dados_api.get("municipio", "")
+                st.session_state['uf'] = dados_api.get("uf", "")
                 st.success("Dados carregados da Receita Federal.")
+                st.rerun()
             else:
                 st.warning("CNPJ não encontrado ou excedeu o limite da API.")
         else:
             st.warning("Digite um CNPJ válido para consulta.")
 
+    st.session_state['razao'] = st.text_input("Razão Social", value=st.session_state['razao'])
+    st.session_state['fantasia'] = st.text_input("Nome Fantasia", value=st.session_state['fantasia'])
+    st.session_state['endereco'] = st.text_input("Endereço", value=st.session_state['endereco'])
+    st.session_state['municipio'] = st.text_input("Município", value=st.session_state['municipio'])
+    st.session_state['uf'] = st.text_input("UF", value=st.session_state['uf'])
+    st.session_state['email_cliente'] = st.text_input("Email do Cliente", value=st.session_state['email_cliente'])
+    st.session_state['contato_cliente'] = st.text_input("Contato do Cliente", value=st.session_state['contato_cliente'])
+    st.session_state['nome_contabilidade'] = st.text_input("Nome da Contabilidade", value=st.session_state['nome_contabilidade'])
+    st.session_state['email_contabilidade'] = st.text_input("Email da Contabilidade", value=st.session_state['email_contabilidade'])
+    st.session_state['contato_contabilidade'] = st.text_input("Contato da Contabilidade", value=st.session_state['contato_contabilidade'])
+    st.session_state['observacao'] = st.text_area("Observações", value=st.session_state['observacao'])
 
-    endereco = st.text_input("Endereço", value=endereco)
-    municipio = st.text_input("Município", value=municipio)
-    uf = st.text_input("UF", value=uf)
-    email_cliente = st.text_input("Email do Cliente", value=email_cliente)
-    contato_cliente = st.text_input("Contato do Cliente", value=contato_cliente)
-    nome_contabilidade = st.text_input("Nome da Contabilidade", value=nome_contabilidade)
-    email_contabilidade = st.text_input("Email da Contabilidade", value=email_contabilidade)
-    contato_contabilidade = st.text_input("Contato da Contabilidade", value=contato_contabilidade)
-    observacao = st.text_area("Observações", value=observacao)
-
+    # Botão para salvar
     if st.button("Salvar Cliente"):
-        if not cnpj or not razao:
+        if not st.session_state['cnpj'] or not st.session_state['razao']:
             st.error("CNPJ e Razão Social são obrigatórios.")
         elif cliente_existente:
-            db.atualizar_cliente_por_cnpj(cnpj, razao, fantasia, endereco, municipio, uf,
-                                          email_cliente, contato_cliente, nome_contabilidade,
-                                          email_contabilidade, contato_contabilidade, observacao)
+            db.atualizar_cliente_por_cnpj(
+                st.session_state['cnpj'], st.session_state['razao'], st.session_state['fantasia'],
+                st.session_state['endereco'], st.session_state['municipio'], st.session_state['uf'],
+                st.session_state['email_cliente'], st.session_state['contato_cliente'], st.session_state['nome_contabilidade'],
+                st.session_state['email_contabilidade'], st.session_state['contato_contabilidade'], st.session_state['observacao']
+            )
             st.success("Cliente atualizado com sucesso!")
             st.rerun()
         else:
-            db.cadastrar_cliente_completo(cnpj, razao, fantasia, endereco, municipio, uf,
-                                          email_cliente, contato_cliente, nome_contabilidade,
-                                          email_contabilidade, contato_contabilidade, observacao)
+            db.cadastrar_cliente_completo(
+                st.session_state['cnpj'], st.session_state['razao'], st.session_state['fantasia'],
+                st.session_state['endereco'], st.session_state['municipio'], st.session_state['uf'],
+                st.session_state['email_cliente'], st.session_state['contato_cliente'], st.session_state['nome_contabilidade'],
+                st.session_state['email_contabilidade'], st.session_state['contato_contabilidade'], st.session_state['observacao']
+            )
             st.success("Cliente cadastrado com sucesso!")
             st.rerun()
 
