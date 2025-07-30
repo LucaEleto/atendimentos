@@ -49,7 +49,7 @@ def listar_atendimentos():
     conn = conectar()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-                    SELECT a.id, u.nome AS usuario, a.cliente, a.cliente, a.descricao, a.status, a.data
+                    SELECT a.id, u.nome AS usuario, a.cliente, a.cliente, a.descricao, a.status, a.data, a.data_fin
                     FROM atendimentos a
                     JOIN usuarios AS u ON a.usuario_id = u.id
                     ORDER BY a.data DESC
