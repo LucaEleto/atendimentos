@@ -187,6 +187,21 @@ def buscar_dados_cnpj(cnpj):
 st.session_state.empresa_selecionada = None
     
 def cadastrar_empresa():
+    st.session_state.empresa_form = {
+        'cnpj': '',
+        'razao': '',
+        'fantasia': '',
+        'endereco': '',
+        'municipio': '',
+        'uf': '',
+        'email_cliente': '',
+        'contato_cliente': '',
+        'nome_contabilidade': '',
+        'email_contabilidade': '',
+        'contato_contabilidade': '',
+        'observacao': ''
+    }
+    
     st.title("Cadastro de Empresa")
 
     # Busca empresa por nome
