@@ -30,10 +30,19 @@ def buscar_usuario_por_email(email):
 def salvar_atendimento(usuario_id, cliente, descricao, status):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO atendimentos (usuario_id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
-                    (usuario_id, cliente, descricao, status))
+    if status == "Concluído":
+        cursor.execute(
+            "INSERT INTO atendimentos (usuario_id, cliente, descricao, status, data_fin) VALUES (%s, %s, %s, %s, NOW())",
+            (usuario_id, cliente, descricao, status)
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO atendimentos (usuario_id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
+            (usuario_id, cliente, descricao, status)
+        )
     conn.commit()
     cursor.close()
+    conn.close()
 
 
 def listar_atendimentos():
@@ -68,7 +77,7 @@ def listar_atendimentos_por_usuario(usuario_id):
     conn = conectar()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT id, cliente, descricao, status, data
+        SELECT id, cliente, descricao, status, data, data_fin
         FROM atendimentos
         WHERE usuario_id = %s
         ORDER BY data DESC
@@ -80,7 +89,16 @@ def listar_atendimentos_por_usuario(usuario_id):
 def atualizar_status_atendimento(atendimento_id, novo_status):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("UPDATE atendimentos SET status = %s WHERE id = %s", (novo_status, atendimento_id))
+    if novo_status == "Concluído":
+        cursor.execute(
+            "UPDATE atendimentos SET status = %s, data_fin = NOW() WHERE id = %s",
+            (novo_status, atendimento_id)
+        )
+    else:
+        cursor.execute(
+            "UPDATE atendimentos SET status = %s, data_fin = NULL WHERE id = %s",
+            (novo_status, atendimento_id)
+        )
     conn.commit()
     conn.close()
 
@@ -88,7 +106,7 @@ def listar_cliente(parte_nome):
     conn = conectar()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
+        SELECT razao_social, nome_fantasia, cnpj, endereco, municipio, uf,
                email_cliente, contato_cliente, nome_contabilidade,
                email_contabilidade, contato_contabilidade, observacao
         FROM clientes
@@ -99,16 +117,15 @@ def listar_cliente(parte_nome):
     conn.close()
     return clientes
 
-def cadastrar_cliente_completo(cnpj, razao_social, nome_fantasia, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao):
+def cadastrar_cliente_completo(razao_social, nome_fantasia, cnpj, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao):
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute("""
         INSERT INTO clientes 
-        (cnpj, razao_social, nome_fantasia, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao) 
+        (razao_social, nome_fantasia, cnpj, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao) 
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
-        cnpj, razao_social, nome_fantasia, endereco, municipio, uf, email_cliente, contato_cliente,
-        nome_contabilidade, email_contabilidade, contato_contabilidade, observacao
+        razao_social, nome_fantasia, cnpj, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao
     ))
     conn.commit()
     conn.close()
@@ -132,6 +149,7 @@ def buscar_cliente_por_cnpj(cnpj):
 def atualizar_cliente_por_cnpj(cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
                                 email_cliente, contato_cliente, nome_contabilidade, email_contabilidade,
                                 contato_contabilidade, observacao):
+    print("Atualizando cliente:", cnpj, razao_social, nome_fantasia, endereco, municipio, uf)
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute("""
@@ -156,6 +174,7 @@ def atualizar_cliente_por_cnpj(cnpj, razao_social, nome_fantasia, endereco, muni
     conn.commit()
     cursor.close()
     conn.close()
+
 def excluir_atendimento(atendimento_id):
     conn = conectar()
     cursor = conn.cursor()
