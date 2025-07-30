@@ -117,17 +117,29 @@ def listar_cliente(parte_nome):
     conn.close()
     return clientes
 
-def cadastrar_cliente_completo(razao_social, nome_fantasia, cnpj, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao):
+def cadastrar_cliente_completo(
+    cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
+    email_cliente, contato_cliente, nome_contabilidade,
+    email_contabilidade, contato_contabilidade, observacao
+):
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO clientes 
-        (razao_social, nome_fantasia, cnpj, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
-        razao_social, nome_fantasia, cnpj, endereco, municipio, uf, email_cliente, contato_cliente, nome_contabilidade, email_contabilidade, contato_contabilidade, observacao
-    ))
+    cursor.execute(
+        """
+        INSERT INTO clientes (
+            cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
+            email_cliente, contato_cliente, nome_contabilidade,
+            email_contabilidade, contato_contabilidade, observacao
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """,
+        (
+            cnpj, razao_social, nome_fantasia, endereco, municipio, uf,
+            email_cliente, contato_cliente, nome_contabilidade,
+            email_contabilidade, contato_contabilidade, observacao
+        )
+    )
     conn.commit()
+    cursor.close()
     conn.close()
 
 def cnpj_existe(cnpj):
