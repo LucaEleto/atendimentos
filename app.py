@@ -184,129 +184,125 @@ def buscar_dados_cnpj(cnpj):
         st.error("Erro ao buscar CNPJ: " + str(e))
     return None
     
-def cadastrar_cliente():
-    st.title("Cadastro de Cliente")
+def cadastrar_empresa():
+    st.title("Cadastro de Empresa")
 
-    # Campo de busca em primeiro lugar
-    busca = st.text_input("Buscar por CNPJ, Razão Social ou Nome Fantasia")
+    # Campo de busca
+    busca = st.text_input("Buscar empresa por Razão Social ou Nome Fantasia")
+    empresa_encontrada = None
 
-    # Inicializa os campos vazios
-    dados_api = None
-    cnpj = razao = fantasia = endereco = municipio = uf = ""
-    email_cliente = contato_cliente = nome_contabilidade = ""
-    email_contabilidade = contato_contabilidade = observacao = ""
-
-    cliente_existente = None
-
-    # Busca no banco por CNPJ, razão social ou nome fantasia
     if busca:
-        if len(busca) == 14 and busca.isdigit():
-            cliente_existente = db.buscar_cliente_por_cnpj(busca)
-            if cliente_existente:
-                cnpj = cliente_existente.get("cnpj", busca)
+        resultado = db.listar_cliente(busca)
+        if resultado:
+            if len(resultado) > 1:
+                opcoes = [
+                    f"{c['razao_social']} ({c['nome_fantasia']})"
+                    for c in resultado
+                ]
+                selecionado = st.selectbox("Selecione a empresa encontrada:", opcoes)
+                idx = opcoes.index(selecionado)
+                if st.button("Selecionar empresa"):
+                    st.session_state.empresa_selecionada = resultado[idx]
+            else:
+                st.session_state.empresa_selecionada = resultado[0]
         else:
-            resultado = db.listar_cliente(busca)
-            if resultado:
-                if len(resultado) > 1:
-                    opcoes = [
-                        f"{c['cnpj']} - {c['razao_social']} ({c['nome_fantasia']})"
-                        for c in resultado
-                    ]
-                    selecionado = st.selectbox("Selecione o cliente encontrado:", opcoes)
-                    idx = opcoes.index(selecionado)
-                    cliente_existente = resultado[idx]
-                else:
-                    cliente_existente = resultado[0]
-            if cliente_existente:
-                cnpj = cliente_existente.get("cnpj", "")
+            st.info("Nenhuma empresa encontrada com esse filtro.")
 
-    # Preenche todos os campos se encontrou cliente
-    if cliente_existente:
-        razao = cliente_existente.get("razao_social", "")
-        fantasia = cliente_existente.get("nome_fantasia", "")
-        endereco = cliente_existente.get("endereco", "")
-        municipio = cliente_existente.get("municipio", "")
-        uf = cliente_existente.get("uf", "")
-        email_cliente = cliente_existente.get("email_cliente", "")
-        contato_cliente = cliente_existente.get("contato_cliente", "")
-        nome_contabilidade = cliente_existente.get("nome_contabilidade", "")
-        email_contabilidade = cliente_existente.get("email_contabilidade", "")
-        contato_contabilidade = cliente_existente.get("contato_contabilidade", "")
-        observacao = cliente_existente.get("observacao", "")
+    # Use a empresa selecionada para preencher o formulário
+    empresa_encontrada = st.session_state.get('empresa_selecionada', None)
 
-    # Antes dos widgets, inicialize no session_state se ainda não existir
-    for campo, valor_inicial in [
-        ("razao", razao),
-        ("fantasia", fantasia),
-        ("cnpj", cnpj),
-        ("endereco", endereco),
-        ("municipio", municipio),
-        ("uf", uf),
-        ("email_cliente", email_cliente),
-        ("contato_cliente", contato_cliente),
-        ("nome_contabilidade", nome_contabilidade),
-        ("email_contabilidade", email_contabilidade),
-        ("contato_contabilidade", contato_contabilidade),
-        ("observacao", observacao)
-    ]:
-        if campo not in st.session_state:
-            st.session_state[campo] = valor_inicial
+    # Inicializa session_state para os campos
+    campos = [
+        'cnpj', 'razao', 'fantasia', 'endereco', 'municipio', 'uf',
+        'email_cliente', 'contato_cliente', 'nome_contabilidade',
+        'email_contabilidade', 'contato_contabilidade', 'observacao'
+    ]
+    if 'empresa_form' not in st.session_state:
+        st.session_state.empresa_form = {c: "" for c in campos}
 
-    # Campos do formulário usando session_state
-    st.session_state['cnpj'] = st.text_input("CNPJ", value=st.session_state['cnpj'], max_chars=14)
+    # Preenche campos se encontrou empresa
+    if empresa_encontrada:
+        st.session_state.empresa_form['cnpj'] = empresa_encontrada.get("cnpj", "")
+        st.session_state.empresa_form['razao'] = empresa_encontrada.get("razao_social", "")
+        st.session_state.empresa_form['fantasia'] = empresa_encontrada.get("nome_fantasia", "")
+        st.session_state.empresa_form['endereco'] = empresa_encontrada.get("endereco", "")
+        st.session_state.empresa_form['municipio'] = empresa_encontrada.get("municipio", "")
+        st.session_state.empresa_form['uf'] = empresa_encontrada.get("uf", "")
+        st.session_state.empresa_form['email_cliente'] = empresa_encontrada.get("email_cliente", "")
+        st.session_state.empresa_form['contato_cliente'] = empresa_encontrada.get("contato_cliente", "")
+        st.session_state.empresa_form['nome_contabilidade'] = empresa_encontrada.get("nome_contabilidade", "")
+        st.session_state.empresa_form['email_contabilidade'] = empresa_encontrada.get("email_contabilidade", "")
+        st.session_state.empresa_form['contato_contabilidade'] = empresa_encontrada.get("contato_contabilidade", "")
+        st.session_state.empresa_form['observacao'] = empresa_encontrada.get("observacao", "")
 
-    # Botão para buscar na Receita Federal logo abaixo do campo CNPJ
+    # Campos do formulário
+    cnpj = st.text_input("CNPJ", value=st.session_state.empresa_form['cnpj'], max_chars=14, key="cnpj_empresa")
     if st.button("Buscar na Receita Federal"):
-        cnpj = st.session_state['cnpj']
         if len(cnpj) == 14 and cnpj.isdigit():
             dados_api = buscar_dados_cnpj(cnpj)
             if dados_api:
-                st.session_state['razao'] = dados_api.get("nome", "")
-                st.session_state['fantasia'] = dados_api.get("fantasia", "")
-                st.session_state['endereco'] = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
-                st.session_state['municipio'] = dados_api.get("municipio", "")
-                st.session_state['uf'] = dados_api.get("uf", "")
+                st.session_state.empresa_form['razao'] = dados_api.get("nome", "")
+                st.session_state.empresa_form['fantasia'] = dados_api.get("fantasia", "")
+                st.session_state.empresa_form['endereco'] = f"{dados_api.get('logradouro', '')}, {dados_api.get('numero', '')} - {dados_api.get('bairro', '')}"
+                st.session_state.empresa_form['municipio'] = dados_api.get("municipio", "")
+                st.session_state.empresa_form['uf'] = dados_api.get("uf", "")
+                st.session_state.empresa_form['cnpj'] = cnpj
                 st.success("Dados carregados da Receita Federal.")
-                st.rerun()
             else:
                 st.warning("CNPJ não encontrado ou excedeu o limite da API.")
         else:
             st.warning("Digite um CNPJ válido para consulta.")
 
-    st.session_state['razao'] = st.text_input("Razão Social", value=st.session_state['razao'])
-    st.session_state['fantasia'] = st.text_input("Nome Fantasia", value=st.session_state['fantasia'])
-    st.session_state['endereco'] = st.text_input("Endereço", value=st.session_state['endereco'])
-    st.session_state['municipio'] = st.text_input("Município", value=st.session_state['municipio'])
-    st.session_state['uf'] = st.text_input("UF", value=st.session_state['uf'])
-    st.session_state['email_cliente'] = st.text_input("Email do Cliente", value=st.session_state['email_cliente'])
-    st.session_state['contato_cliente'] = st.text_input("Contato do Cliente", value=st.session_state['contato_cliente'])
-    st.session_state['nome_contabilidade'] = st.text_input("Nome da Contabilidade", value=st.session_state['nome_contabilidade'])
-    st.session_state['email_contabilidade'] = st.text_input("Email da Contabilidade", value=st.session_state['email_contabilidade'])
-    st.session_state['contato_contabilidade'] = st.text_input("Contato da Contabilidade", value=st.session_state['contato_contabilidade'])
-    st.session_state['observacao'] = st.text_area("Observações", value=st.session_state['observacao'])
+    razao = st.text_input("Razão Social", value=st.session_state.empresa_form['razao'], key="razao_empresa")
+    fantasia = st.text_input("Nome Fantasia", value=st.session_state.empresa_form['fantasia'], key="fantasia_empresa")
+    endereco = st.text_input("Endereço", value=st.session_state.empresa_form['endereco'], key="endereco_empresa")
+    municipio = st.text_input("Município", value=st.session_state.empresa_form['municipio'], key="municipio_empresa")
+    uf = st.text_input("UF", value=st.session_state.empresa_form['uf'], key="uf_empresa")
+    email_cliente = st.text_input("Email do Cliente", value=st.session_state.empresa_form.get('email_cliente', ''), key="email_cliente")
+    contato_cliente = st.text_input("Contato do Cliente", value=st.session_state.empresa_form.get('contato_cliente', ''), key="contato_cliente")
+    nome_contabilidade = st.text_input("Nome da Contabilidade", value=st.session_state.empresa_form.get('nome_contabilidade', ''), key="nome_contabilidade")
+    email_contabilidade = st.text_input("Email da Contabilidade", value=st.session_state.empresa_form.get('email_contabilidade', ''), key="email_contabilidade")
+    contato_contabilidade = st.text_input("Contato da Contabilidade", value=st.session_state.empresa_form.get('contato_contabilidade', ''), key="contato_contabilidade")
+    observacao = st.text_area("Observação", value=st.session_state.empresa_form.get('observacao', ''), key="observacao")
 
-    # Botão para salvar
-    if st.button("Salvar Cliente"):
-        if not st.session_state['cnpj'] or not st.session_state['razao']:
+    if st.button("Salvar Empresa"):
+        # Atualiza session_state com os valores atuais dos campos
+        st.session_state.empresa_form['cnpj'] = cnpj
+        st.session_state.empresa_form['razao'] = razao
+        st.session_state.empresa_form['fantasia'] = fantasia
+        st.session_state.empresa_form['endereco'] = endereco
+        st.session_state.empresa_form['municipio'] = municipio
+        st.session_state.empresa_form['uf'] = uf
+        st.session_state.empresa_form['email_cliente'] = email_cliente
+        st.session_state.empresa_form['contato_cliente'] = contato_cliente
+        st.session_state.empresa_form['nome_contabilidade'] = nome_contabilidade
+        st.session_state.empresa_form['email_contabilidade'] = email_contabilidade
+        st.session_state.empresa_form['contato_contabilidade'] = contato_contabilidade
+        st.session_state.empresa_form['observacao'] = observacao
+
+        if not cnpj or not razao:
             st.error("CNPJ e Razão Social são obrigatórios.")
-        elif cliente_existente:
+        elif empresa_encontrada:
             db.atualizar_cliente_por_cnpj(
-                st.session_state['cnpj'], st.session_state['razao'], st.session_state['fantasia'],
-                st.session_state['endereco'], st.session_state['municipio'], st.session_state['uf'],
-                st.session_state['email_cliente'], st.session_state['contato_cliente'], st.session_state['nome_contabilidade'],
-                st.session_state['email_contabilidade'], st.session_state['contato_contabilidade'], st.session_state['observacao']
+                cnpj, razao, fantasia, endereco, municipio, uf,
+                email_cliente, contato_cliente, nome_contabilidade,
+                email_contabilidade, contato_contabilidade, observacao
             )
-            st.success("Cliente atualizado com sucesso!")
+            st.success("Empresa atualizada com sucesso!")
+            st.session_state.empresa_form = {c: "" for c in st.session_state.empresa_form}
+            st.session_state.empresa_selecionada = None
             st.rerun()
         else:
             db.cadastrar_cliente_completo(
-                st.session_state['cnpj'], st.session_state['razao'], st.session_state['fantasia'],
-                st.session_state['endereco'], st.session_state['municipio'], st.session_state['uf'],
-                st.session_state['email_cliente'], st.session_state['contato_cliente'], st.session_state['nome_contabilidade'],
-                st.session_state['email_contabilidade'], st.session_state['contato_contabilidade'], st.session_state['observacao']
+                cnpj, razao, fantasia, endereco, municipio, uf,
+                email_cliente, contato_cliente, nome_contabilidade,
+                email_contabilidade, contato_contabilidade, observacao
             )
-            st.success("Cliente cadastrado com sucesso!")
+            st.success("Empresa cadastrada com sucesso!")
+            st.session_state.empresa_form = {c: "" for c in st.session_state.empresa_form}
+            st.session_state.empresa_selecionada = None
             st.rerun()
+
 
 def consulta_licenca():
 
@@ -451,7 +447,7 @@ def tela_principal():
     elif escolha == 'Painel de Administração':
         paniel_admin()
     elif escolha == "Cadastrar Cliente":
-        cadastrar_cliente()
+        cadastrar_empresa()
     elif escolha == "Consulta Licença":
         consulta_licenca()
     elif escolha == "Atualizar Licença":
