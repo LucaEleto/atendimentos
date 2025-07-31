@@ -4,6 +4,7 @@ import auth
 import requests
 import pandas as pd
 import datetime
+from streamlit_modal import Modal
 
 st.set_page_config(page_title='Sistema De Atendimento', layout='wide')
 
@@ -56,13 +57,22 @@ def meus_atendimentos():
         st.warning("Nenhum atendimento encontrado com esse status.")
         return
     
+    usuarios = db.listar_usuarios()
+    opcoes_usuarios = {f"{u['nome']} (ID {u['id']})": u['id'] for u in usuarios if u['id'] != st.session_state.usuario['id']}
+    
     for atendimento in meus:
         with st.expander(f"{atendimento['cliente']}"):
+
+            atendimento_id = atendimento["id"]
+            modal_transfer = Modal(f"Confirmar transferência - {atendimento_id}", key=f"modal_transfer_{atendimento_id}")
+            modal_excluir = Modal(f"Confirmar exclusão - {atendimento_id}", key=f"modal_excluir_{atendimento_id}")
+
             try:
                 data_obj = datetime.datetime.strptime(str(atendimento["data"]), "%Y-%m-%d %H:%M:%S")
                 data_formatada = data_obj.strftime("%d/%m/%Y %H:%M")
             except Exception:
-                data_formatada = atendimento["data"]  # fallback se não conseguir converter
+                data_formatada = atendimento["data"]
+
             if atendimento.get("data_fin"):
                 try:
                     data_fin_obj = datetime.datetime.strptime(str(atendimento["data_fin"]), "%Y-%m-%d %H:%M:%S")
@@ -70,16 +80,19 @@ def meus_atendimentos():
                 except Exception:
                     data_fin_formatada = atendimento["data_fin"]
                 st.markdown(f'**Finalizado em:** {data_fin_formatada}')
+
             st.markdown(f'**Data do atendimento:** {data_formatada}')
+
             # Editar descrição
             nova_descricao = st.text_area(
                 "Descrição",
                 value=atendimento["descricao"],
-                key=f"desc_{atendimento['id']}"
+                key=f"desc_{atendimento_id}"
             )
+
             if nova_descricao != atendimento["descricao"]:
-                if st.button("Salvar Descrição", key=f"salvar_desc_{atendimento['id']}"):
-                    db.atualizar_descricao_atendimento(atendimento["id"], nova_descricao)
+                if st.button("Salvar Descrição", key=f"salvar_desc_{atendimento_id}"):
+                    db.atualizar_descricao_atendimento(atendimento_id, nova_descricao)
                     st.success("Descrição atualizada.")
                     st.rerun()
 
@@ -88,22 +101,59 @@ def meus_atendimentos():
                 "Status",
                 ["Aberto", "Pendente", "Concluído"],
                 index=["Aberto", "Pendente", "Concluído"].index(atendimento["status"]),
-                key=f"status_{atendimento['id']}"
+                key=f"status_{atendimento_id}"
             )
             if novo_status != atendimento["status"]:
-                db.atualizar_status_atendimento(atendimento["id"], novo_status)
+                db.atualizar_status_atendimento(atendimento_id, novo_status)
                 st.success("Status atualizado.")
                 st.rerun()
 
+            # Transferência de atendimento
+            novo_responsavel = st.selectbox(
+                "Transferir para:",
+                options=list(opcoes_usuarios.keys()),
+                key=f"transferir_para_{atendimento_id}"
+            )
+            if st.button("Transferir Atendimento", key=f"btn_transferir_{atendimento_id}"):
+                modal_transfer.open()
+
+            if modal_transfer.is_open():
+                with modal_transfer.container():
+                    st.warning(f"Tem certeza que deseja transferir este atendimento para {novo_responsavel}?")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Confirmar Transferência", key=f"conf_transfer_{atendimento_id}"):
+                            novo_usuario_id = opcoes_usuarios[novo_responsavel]
+                            db.transferir_atendimento(atendimento_id, novo_usuario_id)
+                            st.success("Atendimento transferido.")
+                            st.rerun()
+                    with col2:
+                        if st.button("Cancelar", key=f"cancel_transfer_{atendimento_id}"):
+                            modal_transfer.close()
+
             # Excluir atendimento
-            if st.button("Excluir Atendimento", key=f"excluir_{atendimento['id']}"):
-                db.excluir_atendimento(atendimento["id"])
-                st.success("Atendimento excluído.")
-                st.rerun()
+            if st.button("Excluir Atendimento", key=f"excluir_{atendimento_id}"):
+                modal_excluir.open()
+
+            if modal_excluir.is_open():
+                with modal_excluir.container():
+                    st.warning("Tem certeza que deseja excluir este atendimento? Esta ação não poderá ser desfeita.")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Confirmar Exclusão", key=f"conf_excluir_{atendimento_id}"):
+                            db.excluir_atendimento(atendimento_id)
+                            st.success("Atendimento excluído.")
+                            st.rerun()
+                    with col2:
+                        if st.button("Cancelar", key=f"cancel_excluir_{atendimento_id}"):
+                            modal_excluir.close()
+                
                 
 
 def tela_atendimentos():
+
     st.title('Registro de Atendimentos')
+
     nome_digitado = st.text_input('Nome, CNPJ ou Fantasia do Cliente')
     cliente_selecionado = st.session_state.get('cliente_selecionado', None)
 
@@ -167,7 +217,6 @@ def tela_atendimentos():
             # NÃO limpe observacao_cliente aqui!
             if 'radio_cliente' in st.session_state:
                 del st.session_state.radio_cliente
-            
 
 def paniel_admin():
     st.title('Painel de Administração')
@@ -196,10 +245,10 @@ def cadastrar_empresa():
         'municipio': '',
         'uf': '',
         'email_cliente': '',
-        'telefone_cliente': '',
+        'contato_cliente': '',
         'nome_contabilidade': '',
         'email_contabilidade': '',
-        'telefone_contabilidade': '',
+        'contato_contabilidade': '',
         'observacao': ''
     }
     
@@ -254,10 +303,10 @@ def cadastrar_empresa():
     st.text_input("Município", value=st.session_state.empresa_form['municipio'], key="municipio_empresa")
     st.text_input("UF", value=st.session_state.empresa_form['uf'], key="uf_empresa")
     st.text_input("Email do Cliente", key="email_cliente")
-    st.text_input("Telefone do Cliente", key="telefone_cliente")
+    st.text_input("Contato do Cliente", key="contato_cliente")
     st.text_input("Nome da Contabilidade", key="nome_contabilidade")
     st.text_input("Email da Contabilidade", key="email_contabilidade")
-    st.text_input("Telefone da Contabilidade", key="telefone_contabilidade")
+    st.text_input("Contato da Contabilidade", key="contato_contabilidade")
     st.text_area("Observação", key="observacao")
 
     if st.button("Salvar Empresa"):
@@ -275,10 +324,10 @@ def cadastrar_empresa():
                 st.session_state.municipio_empresa,
                 st.session_state.uf_empresa,
                 st.session_state.email_cliente,
-                st.session_state.telefone_cliente,
+                st.session_state.contato_cliente,
                 st.session_state.nome_contabilidade,
                 st.session_state.email_contabilidade,
-                st.session_state.telefone_contabilidade,
+                st.session_state.contato_contabilidade,
                 st.session_state.observacao
             )
             st.success("Empresa atualizada com sucesso!")
@@ -291,10 +340,10 @@ def cadastrar_empresa():
                 st.session_state.municipio_empresa,
                 st.session_state.uf_empresa,
                 st.session_state.email_cliente,
-                st.session_state.telefone_cliente,
+                st.session_state.contato_cliente,
                 st.session_state.nome_contabilidade,
                 st.session_state.email_contabilidade,
-                st.session_state.telefone_contabilidade,
+                st.session_state.contato_contabilidade,
                 st.session_state.observacao
             )
             st.success("Empresa cadastrada com sucesso!")
@@ -310,10 +359,10 @@ def carregar_dados_empresa(empresa):
     st.session_state["municipio_empresa"] = empresa.get("municipio", "")
     st.session_state["uf_empresa"] = empresa.get("uf", "")
     st.session_state["email_cliente"] = empresa.get("email_cliente", "")
-    st.session_state["telefone_cliente"] = empresa.get("telefone_cliente", "")
+    st.session_state["contato_cliente"] = empresa.get("contato_cliente", "")
     st.session_state["nome_contabilidade"] = empresa.get("nome_contabilidade", "")
     st.session_state["email_contabilidade"] = empresa.get("email_contabilidade", "")
-    st.session_state["telefone_contabilidade"] = empresa.get("telefone_contabilidade", "")
+    st.session_state["contato_contabilidade"] = empresa.get("contato_contabilidade", "")
     st.session_state["observacao"] = empresa.get("observacao", "")
 
 def consulta_licenca():
