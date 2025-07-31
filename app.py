@@ -195,10 +195,10 @@ def cadastrar_empresa():
         'municipio': '',
         'uf': '',
         'email_cliente': '',
-        'contato_cliente': '',
+        'telefone_cliente': '',
         'nome_contabilidade': '',
         'email_contabilidade': '',
-        'contato_contabilidade': '',
+        'telefone_contabilidade': '',
         'observacao': ''
     }
     
@@ -253,10 +253,10 @@ def cadastrar_empresa():
     st.text_input("Município", value=st.session_state.empresa_form['municipio'], key="municipio_empresa")
     st.text_input("UF", value=st.session_state.empresa_form['uf'], key="uf_empresa")
     st.text_input("Email do Cliente", key="email_cliente")
-    st.text_input("Contato do Cliente", key="contato_cliente")
+    st.text_input("Telefone do Cliente", key="contato_cliente")
     st.text_input("Nome da Contabilidade", key="nome_contabilidade")
     st.text_input("Email da Contabilidade", key="email_contabilidade")
-    st.text_input("Contato da Contabilidade", key="contato_contabilidade")
+    st.text_input("Telefone da Contabilidade", key="contato_contabilidade")
     st.text_area("Observação", key="observacao")
 
     if st.button("Salvar Empresa"):
@@ -274,10 +274,10 @@ def cadastrar_empresa():
                 st.session_state.municipio_empresa,
                 st.session_state.uf_empresa,
                 st.session_state.email_cliente,
-                st.session_state.contato_cliente,
+                st.session_state.telefone_cliente,
                 st.session_state.nome_contabilidade,
                 st.session_state.email_contabilidade,
-                st.session_state.contato_contabilidade,
+                st.session_state.telefone_contabilidade,
                 st.session_state.observacao
             )
             st.success("Empresa atualizada com sucesso!")
@@ -290,10 +290,10 @@ def cadastrar_empresa():
                 st.session_state.municipio_empresa,
                 st.session_state.uf_empresa,
                 st.session_state.email_cliente,
-                st.session_state.contato_cliente,
+                st.session_state.telefone_cliente,
                 st.session_state.nome_contabilidade,
                 st.session_state.email_contabilidade,
-                st.session_state.contato_contabilidade,
+                st.session_state.telefone_contabilidade,
                 st.session_state.observacao
             )
             st.success("Empresa cadastrada com sucesso!")
@@ -309,10 +309,10 @@ def carregar_dados_empresa(empresa):
     st.session_state["municipio_empresa"] = empresa.get("municipio", "")
     st.session_state["uf_empresa"] = empresa.get("uf", "")
     st.session_state["email_cliente"] = empresa.get("email_cliente", "")
-    st.session_state["contato_cliente"] = empresa.get("contato_cliente", "")
+    st.session_state["telefone_cliente"] = empresa.get("telefone_cliente", "")
     st.session_state["nome_contabilidade"] = empresa.get("nome_contabilidade", "")
     st.session_state["email_contabilidade"] = empresa.get("email_contabilidade", "")
-    st.session_state["contato_contabilidade"] = empresa.get("contato_contabilidade", "")
+    st.session_state["telefone_contabilidade"] = empresa.get("telefone_contabilidade", "")
     st.session_state["observacao"] = empresa.get("observacao", "")
 
 def consulta_licenca():
