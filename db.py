@@ -4,10 +4,10 @@ import mysql.connector
 
 def conectar():
     return mysql.connector.connect(
-        host='localhost',
-        user= 'root',
-        password='clara02',
-        database='atendimento'
+        host='162.241.203.62',
+        user= 'avinfo61_servico',
+        password='Sclara02',
+        database='avinfo61_atendimento'
     )
 
 def criar_usuario(nome, email, senha_hash, papel='usuario'):
