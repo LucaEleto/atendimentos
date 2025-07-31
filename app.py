@@ -108,45 +108,46 @@ def meus_atendimentos():
                 st.success("Status atualizado.")
                 st.rerun()
 
-            # Transferência de atendimento
+            # Transferir atendimento
             novo_responsavel = st.selectbox(
                 "Transferir para:",
                 options=list(opcoes_usuarios.keys()),
-                key=f"transferir_para_{atendimento_id}"
+                key=f"transferir_para_{atendimento['id']}"
             )
-            if st.button("Transferir Atendimento", key=f"btn_transferir_{atendimento_id}"):
-                modal_transfer.open()
 
-            if modal_transfer.is_open():
-                with modal_transfer.container():
-                    st.warning(f"Tem certeza que deseja transferir este atendimento para {novo_responsavel}?")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("Confirmar Transferência", key=f"conf_transfer_{atendimento_id}"):
-                            novo_usuario_id = opcoes_usuarios[novo_responsavel]
-                            db.transferir_atendimento(atendimento_id, novo_usuario_id)
-                            st.success("Atendimento transferido.")
-                            st.rerun()
-                    with col2:
-                        if st.button("Cancelar", key=f"cancel_transfer_{atendimento_id}"):
-                            modal_transfer.close()
+            if st.button("Transferir Atendimento", key=f"btn_transferir_{atendimento['id']}"):
+                st.session_state[f"confirm_transfer_{atendimento['id']}"] = True
+
+            if st.session_state.get(f"confirm_transfer_{atendimento['id']}"):
+                st.warning("Tem certeza que deseja transferir este atendimento?")
+                confirmar = st.radio(
+                    "Confirma a transferência?",
+                    ["Não", "Sim"],
+                    key=f"radio_transfer_{atendimento['id']}"
+                )
+                if confirmar == "Sim":
+                    novo_usuario_id = opcoes_usuarios[novo_responsavel]
+                    db.transferir_atendimento(atendimento["id"], novo_usuario_id)
+                    st.success(f"Atendimento transferido para {novo_responsavel}.")
+                    st.session_state[f"confirm_transfer_{atendimento['id']}"] = False
+                    st.rerun()
 
             # Excluir atendimento
-            if st.button("Excluir Atendimento", key=f"excluir_{atendimento_id}"):
-                modal_excluir.open()
+            if st.button("Excluir Atendimento", key=f"excluir_{atendimento['id']}"):
+                st.session_state[f"confirm_delete_{atendimento['id']}"] = True
 
-            if modal_excluir.is_open():
-                with modal_excluir.container():
-                    st.warning("Tem certeza que deseja excluir este atendimento? Esta ação não poderá ser desfeita.")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("Confirmar Exclusão", key=f"conf_excluir_{atendimento_id}"):
-                            db.excluir_atendimento(atendimento_id)
-                            st.success("Atendimento excluído.")
-                            st.rerun()
-                    with col2:
-                        if st.button("Cancelar", key=f"cancel_excluir_{atendimento_id}"):
-                            modal_excluir.close()
+            if st.session_state.get(f"confirm_delete_{atendimento['id']}"):
+                st.warning("Tem certeza que deseja excluir este atendimento? Esta ação não poderá ser desfeita.")
+                confirmar_exclusao = st.radio(
+                    "Confirma a exclusão?",
+                    ["Não", "Sim"],
+                    key=f"radio_delete_{atendimento['id']}"
+                )
+                if confirmar_exclusao == "Sim":
+                    db.excluir_atendimento(atendimento["id"])
+                    st.success("Atendimento excluído.")
+                    st.session_state[f"confirm_delete_{atendimento['id']}"] = False
+                    st.rerun()
                 
                 
 
