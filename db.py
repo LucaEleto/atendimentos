@@ -4,10 +4,10 @@ import mysql.connector
 
 def conectar():
     return mysql.connector.connect(
-        host='162.241.203.62',
-        user= 'avinfo61_servico',
-        password='Sclara02',
-        database='avinfo61_atendimento'
+        host='localhost',
+        user= 'root',
+        password='clara02',
+        database='atendimento'
     )
 
 def criar_usuario(nome, email, senha_hash, papel='usuario'):
@@ -200,3 +200,15 @@ def atualizar_descricao_atendimento(atendimento_id, nova_descricao):
     cursor.execute("UPDATE atendimentos SET descricao = %s WHERE id = %s", (nova_descricao, atendimento_id))
     conn.commit()
     conn.close()
+
+def transferir_atendimento(atendimento_id, novo_usuario_id):
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE atendimentos SET usuario_id = %s WHERE id = %s",
+        (novo_usuario_id, atendimento_id)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
