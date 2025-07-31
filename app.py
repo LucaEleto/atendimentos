@@ -253,10 +253,10 @@ def cadastrar_empresa():
     st.text_input("Município", value=st.session_state.empresa_form['municipio'], key="municipio_empresa")
     st.text_input("UF", value=st.session_state.empresa_form['uf'], key="uf_empresa")
     st.text_input("Email do Cliente", key="email_cliente")
-    st.text_input("Telefone do Cliente", key="contato_cliente")
+    st.text_input("Telefone do Cliente", key="telefone_cliente")
     st.text_input("Nome da Contabilidade", key="nome_contabilidade")
     st.text_input("Email da Contabilidade", key="email_contabilidade")
-    st.text_input("Telefone da Contabilidade", key="contato_contabilidade")
+    st.text_input("Telefone da Contabilidade", key="telefone_contabilidade")
     st.text_area("Observação", key="observacao")
 
     if st.button("Salvar Empresa"):
