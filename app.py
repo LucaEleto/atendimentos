@@ -164,6 +164,9 @@ def tela_atendimentos():
             st.success('Atendimento registrado com sucesso!')
             st.session_state.cliente_selecionado = None
             st.session_state.clientes_filtrados = []
+            # NÃO limpe observacao_cliente aqui!
+            if 'radio_cliente' in st.session_state:
+                del st.session_state.radio_cliente
             
 
 def paniel_admin():
