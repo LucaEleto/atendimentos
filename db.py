@@ -77,8 +77,9 @@ def listar_atendimentos_por_usuario(usuario_id):
     conn = conectar()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("""
-        SELECT id, cliente, descricao, status, data, data_fin
+        SELECT id, cliente, descricao, status, data, data_fin, nome_fantasia
         FROM atendimentos
+        LEFT JOIN clientes ON atendimentos.cliente = clientes.cnpj
         WHERE usuario_id = %s
         ORDER BY data DESC
     """, (usuario_id,))
