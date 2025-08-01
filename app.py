@@ -53,8 +53,23 @@ def meus_atendimentos():
     if status_filtro != "Todos":
         meus = [a for a in meus if a["status"] == status_filtro]
 
+    # 🔽 Filtro por data
+    st.subheader("Filtrar por data do atendimento")
+    col1, col2 = st.columns(2)
+    with col1:
+        data_inicio = st.date_input("Data inicial", value=datetime.date.today().replace(day=1))
+    with col2:
+        data_fim = st.date_input("Data final", value=datetime.date.today())
+
+    # Filtrar a lista com base nas datas
+    meus = [
+        a for a in meus
+        if "data" in a and a["data"] and
+           data_inicio <= datetime.datetime.strptime(str(a["data"]), "%Y-%m-%d %H:%M:%S").date() <= data_fim
+    ]
+
     if not meus:
-        st.warning("Nenhum atendimento encontrado com esse status.")
+        st.warning("Nenhum atendimento encontrado com os filtros aplicados.")
         return
     
     usuarios = db.listar_usuarios()
