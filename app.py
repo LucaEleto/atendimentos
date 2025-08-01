@@ -47,7 +47,6 @@ def meus_atendimentos():
         return
 
     # 🔽 Filtro por data
-    st.subheader("Filtrar por data do atendimento")
     col1, col2 = st.columns(2)
     with col1:
         data_inicio = st.date_input("Data inicial", value=datetime.date.today().replace(day=1))
