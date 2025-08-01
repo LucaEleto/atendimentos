@@ -46,13 +46,6 @@ def meus_atendimentos():
         st.info("Você ainda não registrou atendimentos.")
         return
 
-    # 🔽 Filtro por status
-    status_opcoes = ["Todos", "Aberto", "Pendente", "Concluído"]
-    status_filtro = st.selectbox("Filtrar por status:", status_opcoes)
-
-    if status_filtro != "Todos":
-        meus = [a for a in meus if a["status"] == status_filtro]
-
     # 🔽 Filtro por data
     st.subheader("Filtrar por data do atendimento")
     col1, col2 = st.columns(2)
@@ -71,7 +64,14 @@ def meus_atendimentos():
     if not meus:
         st.warning("Nenhum atendimento encontrado com os filtros aplicados.")
         return
-    
+        
+    # 🔽 Filtro por status
+    status_opcoes = ["Todos", "Aberto", "Pendente", "Concluído"]
+    status_filtro = st.selectbox("Filtrar por status:", status_opcoes)
+
+    if status_filtro != "Todos":
+        meus = [a for a in meus if a["status"] == status_filtro]
+        
     usuarios = db.listar_usuarios()
     opcoes_usuarios = {f"{u['nome']} (ID {u['id']})": u['id'] for u in usuarios if u['id'] != st.session_state.usuario['id']}
     
