@@ -42,9 +42,7 @@ def meus_atendimentos():
 
     meus = db.listar_atendimentos_por_usuario(st.session_state.usuario['id'])
 
-    if not meus:
-        st.info("Você ainda não registrou atendimentos.")
-        return
+
 
     # 🔽 Filtro por data
     col1, col2 = st.columns(2)
@@ -70,6 +68,9 @@ def meus_atendimentos():
 
     if status_filtro != "Todos":
         meus = [a for a in meus if a["status"] == status_filtro]
+    if not meus:
+        st.info("Você ainda não registrou atendimentos.")
+        return
         
     usuarios = db.listar_usuarios()
     opcoes_usuarios = {f"{u['nome']} (ID {u['id']})": u['id'] for u in usuarios if u['id'] != st.session_state.usuario['id']}
