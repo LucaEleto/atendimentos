@@ -61,7 +61,7 @@ def meus_atendimentos():
     opcoes_usuarios = {f"{u['nome']} (ID {u['id']})": u['id'] for u in usuarios if u['id'] != st.session_state.usuario['id']}
     
     for atendimento in meus:
-        with st.expander(f"{atendimento['cliente']}"):
+        with st.expander(f"{atendimento['cliente']} - {atendimento['nome_fantasia']}"):
 
             atendimento_id = atendimento["id"]
             modal_transfer = Modal(f"Confirmar transferência - {atendimento_id}", key=f"modal_transfer_{atendimento_id}")
