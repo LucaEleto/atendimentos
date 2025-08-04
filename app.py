@@ -47,7 +47,7 @@ def meus_atendimentos():
     # 🔽 Filtro por data
     col1, col2 = st.columns(2)
     with col1:
-        data_inicio = st.date_input("Data inicial", value=datetime.date.today().replace(day=1))
+        data_inicio = st.date_input("Data inicial", value=datetime.date.today())
     with col2:
         data_fim = st.date_input("Data final", value=datetime.date.today())
 
@@ -545,3 +545,4 @@ else:
         tela_login()
     else:
         tela_registro()
+
