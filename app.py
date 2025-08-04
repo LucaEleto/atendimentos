@@ -42,8 +42,6 @@ def meus_atendimentos():
 
     meus = db.listar_atendimentos_por_usuario(st.session_state.usuario['id'])
 
-
-
     # 🔽 Filtro por data
     col1, col2 = st.columns(2)
     with col1:
@@ -55,13 +53,13 @@ def meus_atendimentos():
     meus = [
         a for a in meus
         if "data" in a and a["data"] and
-           data_inicio <= datetime.datetime.strptime(str(a["data"]), "%Y-%m-%d %H:%M:%S").date() <= data_fim
+        data_inicio <= datetime.datetime.strptime(str(a["data"]), "%Y-%m-%d %H:%M:%S").date() <= data_fim
     ]
 
     if not meus:
         st.warning("Nenhum atendimento encontrado com os filtros aplicados.")
         return
-        
+
     # 🔽 Filtro por status
     status_opcoes = ["Todos", "Aberto", "Pendente", "Concluído"]
     status_filtro = st.selectbox("Filtrar por status:", status_opcoes)
@@ -71,16 +69,18 @@ def meus_atendimentos():
     if not meus:
         st.info("Você ainda não registrou atendimentos.")
         return
-        
+
     usuarios = db.listar_usuarios()
     opcoes_usuarios = {f"{u['nome']} (ID {u['id']})": u['id'] for u in usuarios if u['id'] != st.session_state.usuario['id']}
-    
-    for atendimento in meus:
+
+    for idx, atendimento in enumerate(meus):
+        atendimento_id = atendimento["id"]
+        chave_unica = f"{atendimento_id}_{idx}"
+
         with st.expander(f"{atendimento['cliente']} - {atendimento['nome_fantasia']}"):
 
-            atendimento_id = atendimento["id"]
-            modal_transfer = Modal(f"Confirmar transferência - {atendimento_id}", key=f"modal_transfer_{atendimento_id}")
-            modal_excluir = Modal(f"Confirmar exclusão - {atendimento_id}", key=f"modal_excluir_{atendimento_id}")
+            modal_transfer = Modal(f"Confirmar transferência - {atendimento_id}", key=f"modal_transfer_{chave_unica}")
+            modal_excluir = Modal(f"Confirmar exclusão - {atendimento_id}", key=f"modal_excluir_{chave_unica}")
 
             try:
                 data_obj = datetime.datetime.strptime(str(atendimento["data"]), "%Y-%m-%d %H:%M:%S")
@@ -102,11 +102,11 @@ def meus_atendimentos():
             nova_descricao = st.text_area(
                 "Descrição",
                 value=atendimento["descricao"],
-                key=f"desc_{atendimento_id}"
+                key=f"desc_{chave_unica}"
             )
 
             if nova_descricao != atendimento["descricao"]:
-                if st.button("Salvar Descrição", key=f"salvar_desc_{atendimento_id}"):
+                if st.button("Salvar Descrição", key=f"salvar_desc_{chave_unica}"):
                     db.atualizar_descricao_atendimento(atendimento_id, nova_descricao)
                     st.success("Descrição atualizada.")
                     st.rerun()
@@ -116,7 +116,7 @@ def meus_atendimentos():
                 "Status",
                 ["Aberto", "Pendente", "Concluído"],
                 index=["Aberto", "Pendente", "Concluído"].index(atendimento["status"]),
-                key=f"status_{atendimento_id}"
+                key=f"status_{chave_unica}"
             )
             if novo_status != atendimento["status"]:
                 db.atualizar_status_atendimento(atendimento_id, novo_status)
@@ -127,42 +127,43 @@ def meus_atendimentos():
             novo_responsavel = st.selectbox(
                 "Transferir para:",
                 options=list(opcoes_usuarios.keys()),
-                key=f"transferir_para_{atendimento['id']}"
+                key=f"transferir_para_{chave_unica}"
             )
 
-            if st.button("Transferir Atendimento", key=f"btn_transferir_{atendimento['id']}"):
-                st.session_state[f"confirm_transfer_{atendimento['id']}"] = True
+            if st.button("Transferir Atendimento", key=f"btn_transferir_{chave_unica}"):
+                st.session_state[f"confirm_transfer_{chave_unica}"] = True
 
-            if st.session_state.get(f"confirm_transfer_{atendimento['id']}"):
+            if st.session_state.get(f"confirm_transfer_{chave_unica}"):
                 st.warning("Tem certeza que deseja transferir este atendimento?")
                 confirmar = st.radio(
                     "Confirma a transferência?",
                     ["Não", "Sim"],
-                    key=f"radio_transfer_{atendimento['id']}"
+                    key=f"radio_transfer_{chave_unica}"
                 )
                 if confirmar == "Sim":
                     novo_usuario_id = opcoes_usuarios[novo_responsavel]
-                    db.transferir_atendimento(atendimento["id"], novo_usuario_id)
+                    db.transferir_atendimento(atendimento_id, novo_usuario_id)
                     st.success(f"Atendimento transferido para {novo_responsavel}.")
-                    st.session_state[f"confirm_transfer_{atendimento['id']}"] = False
+                    st.session_state[f"confirm_transfer_{chave_unica}"] = False
                     st.rerun()
 
             # Excluir atendimento
-            if st.button("Excluir Atendimento", key=f"excluir_{atendimento['id']}"):
-                st.session_state[f"confirm_delete_{atendimento['id']}"] = True
+            if st.button("Excluir Atendimento", key=f"excluir_{chave_unica}"):
+                st.session_state[f"confirm_delete_{chave_unica}"] = True
 
-            if st.session_state.get(f"confirm_delete_{atendimento['id']}"):
+            if st.session_state.get(f"confirm_delete_{chave_unica}"):
                 st.warning("Tem certeza que deseja excluir este atendimento? Esta ação não poderá ser desfeita.")
                 confirmar_exclusao = st.radio(
                     "Confirma a exclusão?",
                     ["Não", "Sim"],
-                    key=f"radio_delete_{atendimento['id']}"
+                    key=f"radio_delete_{chave_unica}"
                 )
                 if confirmar_exclusao == "Sim":
-                    db.excluir_atendimento(atendimento["id"])
+                    db.excluir_atendimento(atendimento_id)
                     st.success("Atendimento excluído.")
-                    st.session_state[f"confirm_delete_{atendimento['id']}"] = False
+                    st.session_state[f"confirm_delete_{chave_unica}"] = False
                     st.rerun()
+
                 
                 
 
@@ -545,4 +546,5 @@ else:
         tela_login()
     else:
         tela_registro()
+
 
