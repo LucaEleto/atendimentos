@@ -77,7 +77,7 @@ def meus_atendimentos():
         atendimento_id = atendimento["id"]
         chave_unica = f"{atendimento_id}_{idx}"
 
-        with st.expander(f"{atendimento['cliente']} - {atendimento['nome_fantasia']}"):
+        with st.expander(f"{atendimento['nome_fantasia']}"):
 
             modal_transfer = Modal(f"Confirmar transferência - {atendimento_id}", key=f"modal_transfer_{chave_unica}")
             modal_excluir = Modal(f"Confirmar exclusão - {atendimento_id}", key=f"modal_excluir_{chave_unica}")
@@ -546,5 +546,6 @@ else:
         tela_login()
     else:
         tela_registro()
+
 
 
