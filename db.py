@@ -84,7 +84,7 @@ def listar_atendimentos_por_usuario(usuario_id):
     cursor.execute("""
         SELECT id, cliente, descricao, status, data, data_fin, nome_fantasia
         FROM atendimentos
-        LEFT JOIN clientes ON atendimentos.cliente = clientes.razao_social
+        LEFT JOIN clientes ON atendimentos.cnpj = clientes.cnpj
         WHERE usuario_id = %s
         ORDER BY data DESC
     """, (usuario_id,))
@@ -218,4 +218,5 @@ def transferir_atendimento(atendimento_id, novo_usuario_id):
     cursor.close()
     conn.close()
     
+
 
