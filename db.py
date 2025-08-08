@@ -30,20 +30,25 @@ def buscar_usuario_por_email(email):
 def salvar_atendimento(usuario_id, cliente, descricao, status):
     conn = conectar()
     cursor = conn.cursor()
+
     if status == "Concluído":
-        cursor.execute(
-            "INSERT INTO atendimentos (usuario_id, cliente, descricao, status, data_fin) VALUES (%s, %s, %s, %s, NOW())",
-            (usuario_id, cliente, descricao, status)
-        )
+        cursor.execute("""
+            INSERT INTO atendimentos (usuario_id, cliente, cnpj, descricao, status, data_fin)
+            SELECT %s, c.razao_social, c.cnpj, %s, %s, NOW()
+            FROM clientes c
+            WHERE c.razao_social = %s
+        """, (usuario_id, descricao, status, cliente))
     else:
-        cursor.execute(
-            "INSERT INTO atendimentos (usuario_id, cliente, descricao, status) VALUES (%s, %s, %s, %s)",
-            (usuario_id, cliente, descricao, status)
-        )
+        cursor.execute("""
+            INSERT INTO atendimentos (usuario_id, cliente, cnpj, descricao, status)
+            SELECT %s, c.razao_social, c.cnpj, %s, %s
+            FROM clientes c
+            WHERE c.razao_social = %s
+        """, (usuario_id, descricao, status, cliente))
+
     conn.commit()
     cursor.close()
     conn.close()
-
 
 def listar_atendimentos():
     conn = conectar()
@@ -213,3 +218,4 @@ def transferir_atendimento(atendimento_id, novo_usuario_id):
     cursor.close()
     conn.close()
     
+
